@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LlmAgent, Gemini } from '@google/adk';
-import { PasatandaToolsService } from '../tools/pasatanda-tools.service';
+import { ValidatorToolsService } from './validator.tools';
 
 /**
  * Sub-agente Validator: Maneja verificación de documentos y comprobantes
@@ -18,7 +18,7 @@ export class AdkValidatorAgent {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly tools: PasatandaToolsService,
+    private readonly tools: ValidatorToolsService,
   ) {
     const apiKey = this.config.get<string>('GOOGLE_GENAI_API_KEY', '');
 
@@ -58,7 +58,7 @@ RESPUESTAS:
       instruction,
       description:
         'Agente especializado en verificar comprobantes de pago y extraer información',
-      tools: [this.tools.verifyPaymentProofTool],
+      tools: this.tools.allTools,
     });
 
     this.logger.log('Validator Agent inicializado');

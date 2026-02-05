@@ -7,24 +7,29 @@ import {
   WhatsAppContact,
 } from '../interfaces/whatsapp.interface';
 import { MessageContextOptions as MessagingContext } from '../interfaces/whatsapp-messaging.interface';
-
+import { AdkOrchestratorService } from '../../../core/adk/orchestrator/adk-orchestrator.service';
 import { WhatsAppMessagingService } from './whatsapp.messaging.service';
 
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly defaultPhoneNumberId: string;
+  private readonly sendAgentText: boolean;
   // Cache in-memory para evitar reprocesar mensajes cuando Meta reintenta el webhook.
   private readonly processedMessageCache = new Map<string, number>();
   private readonly processedMessageTtlMs = 10 * 60 * 1000; // 10 minutos
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly adkOrchestrator: AdkOrchestratorService,
     private readonly messagingService: WhatsAppMessagingService,
   ) {
     this.defaultPhoneNumberId =
       this.configService.get<string>('WHATSAPP_PHONE_NUMBER_ID', '') ||
       this.configService.get<string>('PHONE_NUMBER_ID', '');
+    this.sendAgentText =
+      this.configService.get<string>('ADK_SEND_AGENT_TEXT', 'false') === 'true';
+    this.logger.log('🤖 Orquestador ADK activado');
   }
 
   /**
@@ -236,14 +241,71 @@ export class WhatsappService {
   /**
    * Maneja mensajes de texto con lógica de respuesta automática
    */
-  private handleTextMessage(
+  private async handleTextMessage(
     message: WhatsAppIncomingMessage,
     phoneNumberId: string,
     contactWaId?: string,
     contactName?: string,
-  ): {
-    return;
-  };
+  ): Promise<void> {
+    if (!message.text) return;
+
+    const canonicalSender = contactWaId ?? message.from;
+    this.logger.log(`📨 Procesando mensaje de ${canonicalSender}`);
+
+    // La verificación de códigos OTP ahora se maneja vía el orquestador ADK usando una tool dedicada.
+    await this.handleWithAdkOrchestrator(
+      canonicalSender,
+      message,
+      phoneNumberId,
+      contactName,
+    );
+  }
+
+  /**
+   * Procesa mensaje usando el orquestador ADK (Google Agent Development Kit)
+   */
+  private async handleWithAdkOrchestrator(
+    canonicalSender: string,
+    message: WhatsAppIncomingMessage,
+    phoneNumberId: string,
+    contactName?: string,
+  ): Promise<void> {
+    this.logger.debug(
+      `🤖 Procesando con ADK orchestrator para ${canonicalSender}`,
+    );
+
+    try {
+      const result = await this.adkOrchestrator.route({
+        senderId: canonicalSender,
+        senderName: contactName,
+        whatsappMessageId: message.id,
+        originalText: message.text?.body ?? '',
+        message,
+        phoneNumberId,
+        groupId: message.group?.id,
+      });
+
+      if (this.sendAgentText && result.responseText?.trim()) {
+        await this.messagingService.sendText(
+          canonicalSender,
+          result.responseText,
+          { phoneNumberId },
+        );
+      }
+
+      this.logger.log(
+        `✅ [ADK] Mensaje procesado para ${canonicalSender} - Intent: ${result.intent}`,
+      );
+    } catch (error) {
+      this.logger.error(`❌ Error en ADK orchestrator:`, error);
+      // Fallback a mensaje de error amigable
+      await this.messagingService.sendText(
+        canonicalSender,
+        'Lo siento, tuve un problema procesando tu mensaje. Por favor intenta de nuevo.',
+        { phoneNumberId },
+      );
+    }
+  }
 
   /**
    * Maneja mensajes con medios (imagen, video, audio, documento)
@@ -292,6 +354,52 @@ export class WhatsappService {
       'Ubicación recibida. Confírmame en texto cómo deseas usarla y la enrutamos al agente correspondiente.',
       { phoneNumberId },
     );
+  }
+
+  /**
+   * Maneja mensajes interactivos (botones, listas)
+   */
+  private async handleInteractiveMessage(
+    message: WhatsAppIncomingMessage,
+    phoneNumberId: string,
+  ): Promise<void> {
+    if (!message.interactive) return;
+
+    if (message.interactive.button_reply) {
+      this.logger.log(
+        `Botón seleccionado - ID: ${message.interactive.button_reply.id}, Título: ${message.interactive.button_reply.title}`,
+      );
+
+      const selectionText =
+        message.interactive.button_reply.id ||
+        message.interactive.button_reply.title;
+      await this.handleWithAdkOrchestrator(
+        message.from,
+        {
+          ...(message as any),
+          type: 'text',
+          text: { body: selectionText },
+        } as WhatsAppIncomingMessage,
+        phoneNumberId,
+      );
+    } else if (message.interactive.list_reply) {
+      this.logger.log(
+        `Opción de lista seleccionada - ID: ${message.interactive.list_reply.id}, Título: ${message.interactive.list_reply.title}`,
+      );
+
+      const selectionText =
+        message.interactive.list_reply.id ||
+        message.interactive.list_reply.title;
+      await this.handleWithAdkOrchestrator(
+        message.from,
+        {
+          ...(message as any),
+          type: 'text',
+          text: { body: selectionText },
+        } as WhatsAppIncomingMessage,
+        phoneNumberId,
+      );
+    }
   }
 
   /**

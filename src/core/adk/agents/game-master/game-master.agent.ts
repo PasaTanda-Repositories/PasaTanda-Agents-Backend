@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LlmAgent, Gemini } from '@google/adk';
-import { PasatandaToolsService } from '../tools/pasatanda-tools.service';
+import { GameMasterToolsService } from './game-master.tools';
 
 /**
  * Sub-agente Game Master: Maneja creación y gestión de grupos/tandas
@@ -20,7 +20,7 @@ export class AdkGameMasterAgent {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly tools: PasatandaToolsService,
+    private readonly tools: GameMasterToolsService,
   ) {
     const apiKey = this.config.get<string>('GOOGLE_GENAI_API_KEY', '');
 
@@ -75,16 +75,7 @@ RESPUESTAS:
       instruction,
       description:
         'Agente especializado en crear y gestionar grupos de tanda (grupos de ahorro rotativo)',
-      tools: [
-        this.tools.createGroupTool,
-        this.tools.selectAdminGroupTool,
-        this.tools.addParticipantTool,
-        this.tools.respondToInvitationTool,
-        this.tools.configureGroupTool,
-        this.tools.checkGroupStatusTool,
-        this.tools.startTandaTool,
-        this.tools.getUserInfoTool,
-      ],
+      tools: this.tools.allTools,
     });
 
     this.logger.log('Game Master Agent inicializado');

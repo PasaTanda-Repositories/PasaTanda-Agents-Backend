@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LlmAgent, Gemini } from '@google/adk';
-import { PasatandaToolsService } from '../tools/pasatanda-tools.service';
+import { TreasurerToolsService } from './treasurer.tools';
 
 /**
  * Sub-agente Treasurer: Maneja pagos y transacciones financieras
@@ -19,7 +19,7 @@ export class AdkTreasurerAgent {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly tools: PasatandaToolsService,
+    private readonly tools: TreasurerToolsService,
   ) {
     const apiKey = this.config.get<string>('GOOGLE_GENAI_API_KEY', '');
 
@@ -63,12 +63,7 @@ RESPUESTAS:
       instruction,
       description:
         'Agente especializado en gestionar pagos y transacciones de la tanda',
-      tools: [
-        this.tools.createPaymentLinkTool,
-        this.tools.verifyPaymentProofTool,
-        this.tools.getUserInfoTool,
-        this.tools.choosePayoutMethodTool,
-      ],
+      tools: this.tools.allTools,
     });
 
     this.logger.log('Treasurer Agent inicializado');
