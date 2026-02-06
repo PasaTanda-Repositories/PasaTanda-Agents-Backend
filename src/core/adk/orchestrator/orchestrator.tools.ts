@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { FunctionTool } from '@google/adk';
 import { z } from 'zod';
-import { VerificationService } from '../../../features/onboarding/verification.service';
+import { VerificationService } from '../../../features/login/verification.service';
 
 @Injectable()
 export class OrchestratorToolsService {

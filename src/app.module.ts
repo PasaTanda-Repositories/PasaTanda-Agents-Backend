@@ -15,8 +15,8 @@ import { TreasurerToolsService } from './core/adk/agents/treasurer/treasurer.too
 import { ValidatorToolsService } from './core/adk/agents/validator/validator.tools';
 import { GroupCreationService } from './features/groups/services/group-creation.service';
 import { GroupWorkflowService } from './features/groups/services/group-workflow.service';
-import { VerificationService } from './features/onboarding/verification.service';
-import { FrontendWebhookService } from './features/onboarding/frontend-webhook.service';
+import { VerificationService } from './features/login/verification.service';
+import { FrontendWebhookService } from './features/login/frontend-webhook.service';
 import { PaymentIntegrationService } from './features/payments/payment-integration.service';
 import { PaymentWorkflowService } from './features/payments/payment-workflow.service';
 import { WhatsAppMessagingService } from './features/whatsapp/services/whatsapp.messaging.service';
@@ -48,4 +48,3 @@ import { WhatsappService } from './features/whatsapp/services/whatsapp.service';
   ],
 })
 export class AppModule {}
-
