@@ -1,34 +1,36 @@
-export interface UpsertUserParams {
-  phone: string;
-  username: string;
-  preferredCurrency: string;
-}
+export type FrequencyType = 'WEEKLY' | 'MONTHLY' | 'BIWEEKLY';
 
-export interface UpsertUserResult {
-  userId: number;
-  stellarPublicKey: string;
-  stellarSecretKey: string;
-  normalizedPhone: string;
-}
-
-export interface CreateMembershipParams {
-  userId: number;
-  groupDbId: number;
-  isAdmin: boolean;
-  turnNumber?: number;
-}
-
-export interface CreateDraftGroupParams {
+export interface CreateGroupParams {
   name: string;
-  amount: number;
-  frequencyDays: number;
-  yieldEnabled: boolean;
-  whatsappGroupId?: string;
+  contributionAmount: number;
+  guaranteeAmount: number;
+  frequency: FrequencyType;
+  totalRounds: number;
+  createdBy: string;
 }
 
-export interface CreateDraftGroupResult {
+export interface CreateGroupResult {
+  id: string;
+  inviteCode: string;
+}
+
+export interface AddMembershipParams {
   groupId: string;
-  groupDbId: number;
-  whatsappGroupJid: string;
-  enableYield: boolean;
+  userId: string;
+  turnNumber?: number;
+  isAdmin?: boolean;
+}
+
+export interface GroupSummary {
+  id: string;
+  name: string;
+  status: string;
+  contributionAmount: number;
+  myTurn: number | null;
+}
+
+export interface GroupDashboard {
+  group: { objectId: string | null; status: string };
+  participants: Array<{ alias: string | null; status: string }>;
+  myStatus: string;
 }

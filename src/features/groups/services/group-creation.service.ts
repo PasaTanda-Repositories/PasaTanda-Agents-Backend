@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { SupabaseService } from '../../../common/intraestructure/supabase/supabase.service';
 import type {
-  UpsertUserParams,
-  UpsertUserResult,
-  CreateMembershipParams,
-  CreateDraftGroupParams,
-  CreateDraftGroupResult,
+  AddMembershipParams,
+  CreateGroupParams,
+  CreateGroupResult,
+  GroupDashboard,
+  GroupSummary,
 } from '../types/group-creation.types';
 
 @Injectable()
@@ -15,105 +15,138 @@ export class GroupCreationService {
 
   constructor(private readonly supabase: SupabaseService) {}
 
-  async upsertUser(params: UpsertUserParams): Promise<UpsertUserResult> {
+  async createGroup(params: CreateGroupParams): Promise<CreateGroupResult> {
     this.ensureSupabaseReady();
-    const normalizedPhone = this.normalizePhone(params.phone);
+    const inviteCode = this.generateInviteCode();
 
-    const rows = await this.supabase.query<{ id: number }>(
-      `
-        INSERT INTO users (phone_number, username, stellar_public_key, wallet_secret_enc, preferred_currency, wallet_type)
-        VALUES ($1, $2, $3, $4, $5, 'MANAGED')
-        ON CONFLICT (phone_number)
-        DO UPDATE SET
-          username = EXCLUDED.username,
-          stellar_public_key = EXCLUDED.stellar_public_key,
-          wallet_secret_enc = EXCLUDED.wallet_secret_enc,
-          preferred_currency = EXCLUDED.preferred_currency
-        RETURNING id
-      `,
+    const rows = await this.supabase.query<{ id: string; invite_code: string }>(
+      `insert into groups (name, contribution_amount_usdc, guarantee_amount_usdc, frequency, total_rounds, status, invite_code, created_by)
+       values ($1, $2, $3, $4, $5, 'DRAFT', $6, $7)
+       returning id, invite_code`,
       [
-        normalizedPhone,
-        params.username,
-        stellarPublicKey,
-        stellarSecretKey,
-        params.preferredCurrency,
-      ],
-    );
-
-    const userId = rows[0]?.id;
-    if (!userId) {
-      throw new Error('No se pudo crear o actualizar el usuario');
-    }
-
-    return { userId, stellarPublicKey, stellarSecretKey, normalizedPhone };
-  }
-
-  async createMembership(params: CreateMembershipParams): Promise<void> {
-    this.ensureSupabaseReady();
-    await this.supabase.query(
-      `
-        INSERT INTO memberships (user_id, group_id, is_admin, turn_number)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (user_id, group_id)
-        DO NOTHING
-      `,
-      [params.userId, params.groupDbId, params.isAdmin, params.turnNumber ?? 1],
-    );
-  }
-
-  async createDraftGroup(
-    params: CreateDraftGroupParams,
-  ): Promise<CreateDraftGroupResult> {
-    this.ensureSupabaseReady();
-    const groupId = randomUUID();
-    const whatsappGroupJid = params.whatsappGroupId ?? `group-${groupId}@g.us`;
-    const shareYieldInfo = params.yieldEnabled;
-
-    const groupRows = await this.supabase.query<{ id: number }>(
-      `
-        INSERT INTO groups (group_whatsapp_id, name, total_cycle_amount_usdc, frequency_days, yield_enabled, status)
-        VALUES ($1, $2, $3, $4, $5, 'DRAFT')
-        RETURNING id
-      `,
-      [
-        whatsappGroupJid,
         params.name,
-        params.amount,
-        params.frequencyDays,
-        shareYieldInfo,
+        params.contributionAmount,
+        params.guaranteeAmount,
+        params.frequency,
+        params.totalRounds,
+        inviteCode,
+        params.createdBy,
       ],
     );
 
-    const groupDbId = groupRows[0]?.id;
-    if (!groupDbId) {
+    const row = rows[0];
+    if (!row) {
       throw new Error('No se pudo crear el grupo');
     }
 
+    return { id: row.id, inviteCode: row.invite_code };
+  }
+
+  async addMembership(params: AddMembershipParams): Promise<string> {
+    this.ensureSupabaseReady();
+
+    await this.supabase.query(
+      `insert into memberships (group_id, user_id, turn_number, is_admin)
+       values ($1, $2, $3, $4)
+       on conflict (group_id, user_id) do nothing`,
+      [params.groupId, params.userId, params.turnNumber ?? null, params.isAdmin ?? false],
+    );
+
+    const rows = await this.supabase.query<{ id: string; turn_number: number | null }>(
+      'select id, turn_number from memberships where group_id = $1 and user_id = $2 limit 1',
+      [params.groupId, params.userId],
+    );
+
+    const row = rows[0];
+    if (!row) {
+      throw new Error('No se pudo registrar la membresía');
+    }
+
+    return row.id;
+  }
+
+  async listGroupsForUser(userId: string): Promise<GroupSummary[]> {
+    this.ensureSupabaseReady();
+    const rows = await this.supabase.query<{
+      id: string;
+      name: string;
+      status: string;
+      contribution_amount_usdc: string;
+      turn_number: number | null;
+    }>(
+      `select g.id, g.name, g.status, g.contribution_amount_usdc, m.turn_number
+       from groups g
+       inner join memberships m on m.group_id = g.id
+       where m.user_id = $1
+       order by g.created_at desc`,
+      [userId],
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      status: row.status,
+      contributionAmount: Number(row.contribution_amount_usdc),
+      myTurn: row.turn_number ?? null,
+    }));
+  }
+
+  async getNextTurnNumber(groupId: string): Promise<number> {
+    this.ensureSupabaseReady();
+    const rows = await this.supabase.query<{ max: number | null }>(
+      'select max(turn_number) as max from memberships where group_id = $1',
+      [groupId],
+    );
+
+    const currentMax = rows[0]?.max ?? 0;
+    return (currentMax ?? 0) + 1;
+  }
+
+  async getDashboard(groupId: string, userId: string): Promise<GroupDashboard> {
+    this.ensureSupabaseReady();
+
+    const groupRows = await this.supabase.query<{ object_id: string | null; status: string }>(
+      'select object_id, status from groups where id = $1 limit 1',
+      [groupId],
+    );
+
+    const group = groupRows[0] ?? { object_id: null, status: 'DRAFT' };
+
+    const participantRows = await this.supabase.query<{
+      alias: string | null;
+      user_id: string;
+    }>(
+      `select u.alias, m.user_id
+       from memberships m
+       inner join users u on u.id = m.user_id
+       where m.group_id = $1
+       order by m.turn_number nulls last`,
+      [groupId],
+    );
+
+    const participants = participantRows.map((row) => ({
+      alias: row.alias,
+      status: 'ACTIVE',
+    }));
+
+    const isMember = participantRows.some((row) => row.user_id === userId);
+
     return {
-      groupId,
-      groupDbId,
-      whatsappGroupJid,
-      enableYield: shareYieldInfo,
+      group: { objectId: group.object_id, status: group.status },
+      participants,
+      myStatus: isMember ? 'PENDING_PAYMENT' : 'NOT_MEMBER',
     };
   }
 
   private ensureSupabaseReady(): void {
     if (!this.supabase.isEnabled()) {
-      this.logger.error(
-        'SupabaseService no está configurado. Asegúrate de definir SUPABASE_DB_URL o POSTGRES_URL* para habilitar operaciones de grupos.',
-      );
-      throw new Error(
-        'Servicio de grupos deshabilitado por falta de conexión a Supabase',
-      );
+      this.logger.error('SupabaseService no está configurado.');
+      throw new Error('Servicio de grupos deshabilitado por falta de conexión a Supabase');
     }
   }
 
-  private normalizePhone(phone: string): string {
-    const digitsOnly = phone?.replace(/\D/g, '') ?? '';
-    if (!digitsOnly) {
-      throw new Error('Número de teléfono inválido');
-    }
-    return digitsOnly;
+  private generateInviteCode(): string {
+    return randomBytes(5).toString('hex');
   }
 }
 
