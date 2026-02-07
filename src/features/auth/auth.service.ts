@@ -179,7 +179,7 @@ export class AuthService {
       sui_address: string;
     }>(
       `insert into users (user_salt, auth_provider, oauth_sub, oauth_aud, sui_address, email, alias, created_at, last_login_at, is_phone_verified)
-       values ($1, $2, $3, $4, $5, $6, $7, timezone(''utc'', now()), timezone(''utc'', now()), false)
+       values ($1, $2, $3, $4, $5, $6, $7, timezone('utc', now()), timezone('utc', now()), false)
        returning id, sui_address`,
       [
         params.salt,
