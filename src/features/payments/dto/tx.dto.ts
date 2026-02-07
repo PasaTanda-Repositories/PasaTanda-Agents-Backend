@@ -42,6 +42,18 @@ export class SponsorPayoutDto {
   mode!: string;
 }
 
+export class SponsorDeployDto {
+  @ApiProperty({ description: 'TransactionBlock serializado en Base64' })
+  @IsString()
+  @IsNotEmpty()
+  txBytes!: string;
+
+  @ApiProperty({ description: 'ID de grupo que se desplegará' })
+  @IsString()
+  @IsNotEmpty()
+  groupId!: string;
+}
+
 export class NotifySuccessDto {
   @ApiProperty({ example: '0xTxHash...' })
   @IsString()

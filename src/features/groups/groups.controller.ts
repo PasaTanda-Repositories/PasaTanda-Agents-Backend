@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,7 +17,8 @@ import {
 } from '@nestjs/swagger';
 import { TokenService } from '../../common/security/token.service';
 import { GroupService } from './services/group.service';
-import { CreateGroupDto, JoinGroupDto } from './dto/group.dto';
+import { CreateGroupDto, JoinGroupByInviteDto } from './dto/group.dto';
+import type { GroupInviteLookup } from './types/group-creation.types';
 
 @ApiTags('groups')
 @ApiBearerAuth()
@@ -80,24 +82,38 @@ export class GroupsController {
     });
   }
 
-  @Post(':id/join')
-  @ApiOperation({ summary: 'Unirse a una tanda existente' })
-  async join(
+  @Get('join/:inviteCode')
+  @ApiOperation({
+    summary: 'Obtiene información de tanda por código de invitación',
+  })
+  async getGroupByInvite(
+    @Param('inviteCode') inviteCode: string,
+  ): Promise<GroupInviteLookup> {
+    const group = await this.groups.getGroupByInviteCode(inviteCode);
+    if (!group) {
+      throw new NotFoundException('GROUP_NOT_FOUND');
+    }
+    return group;
+  }
+
+  @Post('join')
+  @ApiOperation({ summary: 'Unirse a una tanda usando código de invitación' })
+  async joinByInvite(
     @Headers('authorization') authorization: string,
-    @Param('id') groupId: string,
-    @Body() body: JoinGroupDto,
-  ): Promise<{ membershipId: string; turnIndex: number }> {
+    @Body() body: JoinGroupByInviteDto,
+  ): Promise<{ membershipId: string; turnIndex: number; groupId: string }> {
     const { userId } = this.resolveUser(authorization);
-    const turnNumber =
-      body.turnNumber ?? (await this.groups.getNextTurnNumber(groupId));
-    const membershipId = await this.groups.addMembership({
-      groupId,
+    const result = await this.groups.joinGroupByInviteCode({
+      inviteCode: body.inviteCode,
       userId,
-      turnNumber,
-      isAdmin: false,
+      turnNumber: body.turnNumber,
     });
 
-    return { membershipId, turnIndex: turnNumber };
+    return {
+      membershipId: result.membershipId,
+      turnIndex: result.turnIndex,
+      groupId: result.group.id,
+    };
   }
 
   @Get(':id/dashboard')
@@ -111,6 +127,8 @@ export class GroupsController {
     const requester = overrideUserId ?? userId;
     return this.groups.getDashboard(groupId, requester);
   }
+
+  
 
   private resolveUser(authorization?: string): { userId: string } {
     if (!authorization?.startsWith('Bearer ')) {

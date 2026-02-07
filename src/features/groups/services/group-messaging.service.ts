@@ -80,12 +80,41 @@ ${summaryParts.length ? summaryParts.join(' | ') : 'Te avisaremos cuando esté l
     );
   }
 
-  async addParticipantPlaceholder(params: {
+  async addParticipant(params: {
     senderPhone?: string;
     participantPhone?: string;
     participantName?: string;
+    groupId?: string;
+    userId?: string;
   }): Promise<void> {
     const to = params.senderPhone ?? params.participantPhone ?? '';
+
+    if (params.groupId && params.userId) {
+      try {
+        const turnNumber = await this.groups.getNextTurnNumber(params.groupId);
+        const membership = await this.groups.addMembership({
+          groupId: params.groupId,
+          userId: params.userId,
+          turnNumber,
+          isAdmin: false,
+        });
+
+        const effectiveTurn = membership.turnNumber ?? turnNumber;
+
+        await this.messaging.sendText(
+          to,
+          params.participantName
+            ? `Agregamos a ${params.participantName} a la tanda. Turno asignado: ${effectiveTurn}.`
+            : `Participante agregado a la tanda. Turno asignado: ${effectiveTurn}.`,
+        );
+        return;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo agregar participante al grupo ${params.groupId}: ${(error as Error).message}`,
+        );
+      }
+    }
+
     await this.messaging.sendInteractiveButtons(
       to,
       params.participantName
@@ -101,7 +130,10 @@ ${summaryParts.length ? summaryParts.join(' | ') : 'Te avisaremos cuando esté l
           reply: { id: 'participant:add:cancel', title: 'Cancelar' },
         },
       ],
-      { footer: 'El administrador asignará el turno y notificaremos por aquí' },
+      {
+        footer:
+          'Comparte el código de invitación para asignar al participante en la tanda correcta.',
+      },
     );
   }
 
@@ -150,11 +182,60 @@ ${summaryParts.length ? summaryParts.join(' | ') : 'Te avisaremos cuando esté l
     return invite;
   }
 
-  async respondInvitationPlaceholder(params: {
+  async respondInvitation(params: {
     senderPhone: string;
     inviteCode?: string;
     accept?: boolean;
+    userId?: string;
   }): Promise<void> {
+    if (!params.inviteCode) {
+      await this.messaging.sendText(
+        params.senderPhone,
+        'Necesito el código de invitación para procesar tu respuesta.',
+      );
+      return;
+    }
+
+    if (params.accept === false) {
+      await this.messaging.sendText(
+        params.senderPhone,
+        'Invitación rechazada. Avísanos si necesitas otro enlace.',
+      );
+      return;
+    }
+
+    const group = await this.groups.getGroupByInviteCode(params.inviteCode);
+    if (!group) {
+      await this.messaging.sendText(
+        params.senderPhone,
+        'No encontré una tanda con ese código de invitación.',
+      );
+      return;
+    }
+
+    if (params.userId) {
+      try {
+        const joined = await this.groups.joinGroupByInviteCode({
+          inviteCode: params.inviteCode,
+          userId: params.userId,
+        });
+
+        await this.messaging.sendText(
+          params.senderPhone,
+          `Te unimos a "${group.name}". Tu turno asignado es ${joined.turnIndex}.`,
+        );
+        await this.sendStickerIfAvailable(
+          params.senderPhone,
+          this.successStickerId,
+        );
+        return;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo unir al usuario con código ${params.inviteCode}: ${(error as Error).message}`,
+        );
+      }
+    }
+
     await this.messaging.sendInteractiveButtons(
       params.senderPhone,
       'Confirma tu decisión sobre la invitación',
@@ -162,57 +243,95 @@ ${summaryParts.length ? summaryParts.join(' | ') : 'Te avisaremos cuando esté l
         {
           type: 'reply',
           reply: {
-            id: `invite_accept:${params.inviteCode ?? 'unknown'}`,
+            id: `invite_accept:${params.inviteCode}`,
             title: 'Aceptar',
           },
         },
         {
           type: 'reply',
           reply: {
-            id: `invite_decline:${params.inviteCode ?? 'unknown'}`,
+            id: `invite_decline:${params.inviteCode}`,
             title: 'Rechazar',
           },
         },
       ],
     );
-
-    if (params.accept === true) {
-      await this.messaging.sendText(
-        params.senderPhone,
-        '¡Invitación aceptada! Te incorporaremos a la tanda en breve.',
-      );
-      await this.sendStickerIfAvailable(
-        params.senderPhone,
-        this.successStickerId,
-      );
-    }
   }
 
-  async configureGroupPlaceholder(to: string): Promise<void> {
+  async configureGroup(params: {
+    to: string;
+    groupId?: string;
+  }): Promise<void> {
+    const metadata = params.groupId
+      ? await this.groups.getGroupMetadata(params.groupId)
+      : null;
+
     await this.messaging.sendText(
-      to,
-      'Recibí tu solicitud de configuración. Ajustaremos los parámetros y te notificaremos.',
+      params.to,
+      metadata
+        ? `Configuraremos la tanda "${metadata.groupName}" y te notificaremos los cambios.`
+        : 'Recibí tu solicitud de configuración. Ajustaremos los parámetros y te notificaremos.',
     );
   }
 
-  async checkGroupStatusPlaceholder(to: string): Promise<void> {
+  async checkGroupStatus(params: {
+    to: string;
+    groupId?: string;
+    userId?: string;
+  }): Promise<void> {
+    if (params.groupId && params.userId) {
+      try {
+        const dashboard = await this.groups.getDashboard(
+          params.groupId,
+          params.userId,
+        );
+
+        await this.messaging.sendText(
+          params.to,
+          `Estado de la tanda: ${dashboard.group.status}. Participantes: ${dashboard.participants.length}. Tu estado: ${dashboard.myStatus}.`,
+        );
+        return;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo consultar el estado del grupo ${params.groupId}: ${(error as Error).message}`,
+        );
+      }
+    }
+
     await this.messaging.sendText(
-      to,
+      params.to,
       'Enviaremos el estado actualizado de tu tanda pronto.',
     );
   }
 
-  async startTandaPlaceholder(to: string): Promise<void> {
-    await this.messaging.sendText(
-      to,
-      'Estamos iniciando tu tanda. Recibirás confirmación cuando quede activa.',
-    );
-  }
+  async startTanda(params: {
+    to: string;
+    groupId?: string;
+    adminUserId?: string;
+  }): Promise<void> {
+    if (params.groupId && params.adminUserId) {
+      try {
+        await this.groups.startGroup({
+          groupId: params.groupId,
+          adminUserId: params.adminUserId,
+        });
 
-  async getUserInfoPlaceholder(to: string): Promise<void> {
+        await this.messaging.sendText(
+          params.to,
+          'Iniciamos tu tanda. Todos los participantes serán notificados.',
+        );
+        await this.sendStickerIfAvailable(params.to, this.successStickerId);
+        return;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo iniciar la tanda ${params.groupId}: ${(error as Error).message}`,
+        );
+      }
+    }
+
     await this.messaging.sendText(
-      to,
-      'Consultaremos tu información y te la compartiremos en breve.',
+      params.to,
+      'Estamos iniciando tu tanda. Recibirás confirmación cuando quede activa.',
     );
   }
 

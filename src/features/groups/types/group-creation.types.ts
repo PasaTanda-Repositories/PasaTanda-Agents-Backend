@@ -14,6 +14,17 @@ export interface CreateGroupResult {
   inviteCode: string;
 }
 
+export interface GroupInviteLookup {
+  id: string;
+  name: string;
+  status: string;
+  contributionAmount: number;
+  guaranteeAmount: number;
+  frequency: FrequencyType;
+  totalRounds: number;
+  inviteCode: string;
+}
+
 export interface InviteInfo {
   inviteCode: string;
   inviteLink: string;

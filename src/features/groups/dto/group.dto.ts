@@ -37,7 +37,12 @@ export class CreateGroupDto {
   totalRounds!: number;
 }
 
-export class JoinGroupDto {
+export class JoinGroupByInviteDto {
+  @ApiProperty({ description: 'Código de invitación de la tanda' })
+  @IsString()
+  @IsNotEmpty()
+  inviteCode!: string;
+
   @ApiProperty({ required: false, example: 3 })
   @IsOptional()
   @IsNumber()

@@ -13,15 +13,23 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { randomBytes } from 'node:crypto';
 import { SupabaseService } from '../../common/intraestructure/supabase/supabase.service';
 import { TokenService } from '../../common/security/token.service';
 import {
   NotifySuccessDto,
   SponsorCreateDto,
   SponsorDepositDto,
+  SponsorDeployDto,
   SponsorPayoutDto,
 } from './dto/tx.dto';
+import { PaybeSignerService } from './paybe-signer.service';
+import type { PaybeSignatureData } from './types/paybe.types';
+
+type SponsoredTxResponse = {
+  sponsoredSignature: string;
+  txBytes: string;
+  gasOwner: string;
+};
 
 @ApiTags('transactions')
 @ApiBearerAuth()
@@ -30,6 +38,7 @@ export class TransactionsController {
   constructor(
     private readonly tokens: TokenService,
     private readonly supabase: SupabaseService,
+    private readonly paybeSigner: PaybeSignerService,
   ) {}
 
   @Post('sponsor/create')
@@ -37,7 +46,7 @@ export class TransactionsController {
   async sponsorCreate(
     @Headers('authorization') authorization: string,
     @Body() body: SponsorCreateDto,
-  ): Promise<{ sponsoredSignature: string; txBytes: string }> {
+  ): Promise<SponsoredTxResponse> {
     const { userId } = this.resolveUser(authorization);
     await this.recordTransaction({
       groupId: body.groupId ?? null,
@@ -47,10 +56,8 @@ export class TransactionsController {
       suiDigest: null,
     });
 
-    return {
-      sponsoredSignature: this.buildMockSignature(body.txBytes),
-      txBytes: body.txBytes,
-    };
+    const signed = await this.requestSignature(body.txBytes);
+    return this.mapSignature(signed, body.txBytes);
   }
 
   @Post('sponsor/deposit')
@@ -58,7 +65,7 @@ export class TransactionsController {
   async sponsorDeposit(
     @Headers('authorization') authorization: string,
     @Body() body: SponsorDepositDto,
-  ): Promise<{ sponsoredSignature: string; txBytes: string }> {
+  ): Promise<SponsoredTxResponse> {
     const { userId } = this.resolveUser(authorization);
     await this.recordTransaction({
       groupId: body.transactionId ?? null,
@@ -68,10 +75,8 @@ export class TransactionsController {
       suiDigest: null,
     });
 
-    return {
-      sponsoredSignature: this.buildMockSignature(body.txBytes),
-      txBytes: body.txBytes,
-    };
+    const signed = await this.requestSignature(body.txBytes);
+    return this.mapSignature(signed, body.txBytes);
   }
 
   @Post('sponsor/payout')
@@ -79,7 +84,7 @@ export class TransactionsController {
   async sponsorPayout(
     @Headers('authorization') authorization: string,
     @Body() body: SponsorPayoutDto,
-  ): Promise<{ sponsoredSignature: string; txBytes: string }> {
+  ): Promise<SponsoredTxResponse> {
     const { userId } = this.resolveUser(authorization);
     await this.recordTransaction({
       groupId: body.groupId,
@@ -89,10 +94,29 @@ export class TransactionsController {
       suiDigest: null,
     });
 
-    return {
-      sponsoredSignature: this.buildMockSignature(body.txBytes),
-      txBytes: body.txBytes,
-    };
+    const signed = await this.requestSignature(body.txBytes);
+    return this.mapSignature(signed, body.txBytes);
+  }
+
+  @Post('sponsor/deploy')
+  @ApiOperation({
+    summary: 'Patrocina y firma el despliegue inicial de la tanda',
+  })
+  async sponsorDeploy(
+    @Headers('authorization') authorization: string,
+    @Body() body: SponsorDeployDto,
+  ): Promise<SponsoredTxResponse> {
+    const { userId } = this.resolveUser(authorization);
+    await this.recordTransaction({
+      groupId: body.groupId,
+      userId,
+      type: 'DEPLOY',
+      method: 'SUI_NATIVE',
+      suiDigest: null,
+    });
+
+    const signed = await this.requestSignature(body.txBytes);
+    return this.mapSignature(signed, body.txBytes);
   }
 
   @Post('notify-success')
@@ -129,14 +153,16 @@ export class TransactionsController {
     amount: number;
     currency: string;
     concept: string;
+    qrImageLink: string | null;
   }> {
     const rows = await this.supabase.query<{
       id: string;
       status: string;
       amount_usdc: string | null;
       external_payment_url: string | null;
+      qr_image_link: string | null;
     }>(
-      'select id, status, amount_usdc as amount_usdc, external_payment_url from transactions where id = $1 limit 1',
+      'select id, status, amount_usdc as amount_usdc, external_payment_url, qr_image_link from transactions where id = $1 limit 1',
       [id],
     );
 
@@ -147,6 +173,7 @@ export class TransactionsController {
       amount: row?.amount_usdc ? Number(row.amount_usdc) : 0,
       currency: 'USDC',
       concept: row?.external_payment_url ?? 'Pago pendiente',
+      qrImageLink: row?.qr_image_link ?? null,
     };
   }
 
@@ -171,6 +198,21 @@ export class TransactionsController {
     );
   }
 
+  private async requestSignature(txBytes: string): Promise<PaybeSignatureData> {
+    return this.paybeSigner.sponsorGas(txBytes);
+  }
+
+  private mapSignature(
+    payload: PaybeSignatureData,
+    fallbackBytes: string,
+  ): SponsoredTxResponse {
+    return {
+      sponsoredSignature: payload.signature,
+      txBytes: payload.bytes ?? fallbackBytes,
+      gasOwner: payload.gasOwner,
+    };
+  }
+
   private resolveUser(authorization?: string): { userId: string } {
     if (!authorization?.startsWith('Bearer ')) {
       throw new UnauthorizedException('Authorization header inválido');
@@ -178,9 +220,5 @@ export class TransactionsController {
     const token = authorization.slice('Bearer '.length).trim();
     const payload = this.tokens.verifyToken(token);
     return { userId: payload.userId };
-  }
-
-  private buildMockSignature(txBytes: string): string {
-    return `${txBytes.slice(0, 6)}.${randomBytes(8).toString('hex')}`;
   }
 }

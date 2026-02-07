@@ -11,8 +11,10 @@
     { "key": "authProvider", "value": "GOOGLE" },
     { "key": "phone", "value": "+59170012345" },
     { "key": "groupId", "value": "" },
+    { "key": "inviteCode", "value": "" },
     { "key": "txBytes", "value": "BASE64_TX" },
-    { "key": "txDigest", "value": "0xTxHash" }
+    { "key": "txDigest", "value": "0xTxHash" },
+    { "key": "transactionId", "value": "" }
   ],
   "item": [
     {
@@ -143,6 +145,20 @@
           }
         },
         {
+          "name": "Lookup Group by Invite",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/join/{{inviteCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups", "join", "{{inviteCode}}"]
+            }
+          }
+        },
+        {
           "name": "Join Group",
           "request": {
             "method": "POST",
@@ -151,13 +167,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"turnNumber\": 3\n}",
+              "raw": "{\n  \"inviteCode\": \"{{inviteCode}}\",\n  \"turnNumber\": 3\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{baseUrl}}/groups/{{groupId}}/join",
+              "raw": "{{baseUrl}}/groups/join",
               "host": ["{{baseUrl}}"],
-              "path": ["groups", "{{groupId}}", "join"]
+              "path": ["groups", "join"]
             }
           }
         },
@@ -238,6 +254,25 @@
           }
         },
         {
+          "name": "Sponsor Deploy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"txBytes\": \"{{txBytes}}\",\n  \"groupId\": \"{{groupId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tx/sponsor/deploy",
+              "host": ["{{baseUrl}}"],
+              "path": ["tx", "sponsor", "deploy"]
+            }
+          }
+        },
+        {
           "name": "Notify Success",
           "request": {
             "method": "POST",
@@ -284,7 +319,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"event\": \"deposit\",\n  \"amount\": 100\n}",
+              "raw": "{\n  \"type\": \"QR_GENERATED\",\n  \"order_id\": \"{{transactionId}}\",\n  \"data\": {\n    \"qr_image_ipfs_url\": \"https://ipfs.example/qr.png\"\n  }\n}",
               "options": { "raw": { "language": "json" } }
             }
           }

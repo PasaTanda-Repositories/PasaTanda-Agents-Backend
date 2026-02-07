@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { SupabaseService } from '../../../common/intraestructure/supabase/supabase.service';
@@ -7,8 +12,10 @@ import type {
   CreateGroupParams,
   CreateGroupResult,
   GroupDashboard,
+  GroupInviteLookup,
   GroupSummary,
   InviteInfo,
+  FrequencyType,
 } from '../types/group-creation.types';
 
 @Injectable()
@@ -93,7 +100,77 @@ export class GroupService {
     };
   }
 
-  async addMembership(params: AddMembershipParams): Promise<string> {
+  async getGroupByInviteCode(
+    inviteCode: string,
+  ): Promise<GroupInviteLookup | null> {
+    this.ensureSupabaseReady();
+
+    const rows = await this.supabase.query<{
+      id: string;
+      name: string;
+      status: string;
+      invite_code: string;
+      contribution_amount_usdc: string;
+      guarantee_amount_usdc: string;
+      frequency: string;
+      total_rounds: number;
+    }>(
+      `select id, name, status, invite_code, contribution_amount_usdc, guarantee_amount_usdc, frequency, total_rounds
+       from groups
+       where invite_code = $1
+       limit 1`,
+      [inviteCode],
+    );
+
+    const row = rows[0];
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      name: row.name,
+      status: row.status,
+      inviteCode: row.invite_code,
+      contributionAmount: Number(row.contribution_amount_usdc),
+      guaranteeAmount: Number(row.guarantee_amount_usdc ?? 0),
+      frequency: row.frequency as FrequencyType,
+      totalRounds: Number(row.total_rounds),
+    };
+  }
+
+  async joinGroupByInviteCode(params: {
+    inviteCode: string;
+    userId: string;
+    turnNumber?: number;
+  }): Promise<{
+    membershipId: string;
+    turnIndex: number;
+    group: GroupInviteLookup;
+  }> {
+    const group = await this.getGroupByInviteCode(params.inviteCode);
+    if (!group) {
+      throw new NotFoundException('GROUP_NOT_FOUND');
+    }
+
+    const turnNumber =
+      params.turnNumber ?? (await this.getNextTurnNumber(group.id));
+    const membership = await this.addMembership({
+      groupId: group.id,
+      userId: params.userId,
+      turnNumber,
+      isAdmin: false,
+    });
+
+    return {
+      membershipId: membership.id,
+      turnIndex: membership.turnNumber ?? turnNumber,
+      group,
+    };
+  }
+
+  async addMembership(params: AddMembershipParams): Promise<{
+    id: string;
+    turnNumber: number | null;
+  }> {
     this.ensureSupabaseReady();
 
     await this.supabase.query(
@@ -121,7 +198,7 @@ export class GroupService {
       throw new Error('No se pudo registrar la membresía');
     }
 
-    return row.id;
+    return { id: row.id, turnNumber: row.turn_number };
   }
 
   async listGroupsForUser(userId: string): Promise<GroupSummary[]> {
@@ -216,6 +293,30 @@ export class GroupService {
       participants,
       myStatus: isMember ? 'PENDING_PAYMENT' : 'NOT_MEMBER',
     };
+  }
+
+  async startGroup(params: {
+    groupId: string;
+    adminUserId: string;
+  }): Promise<void> {
+    this.ensureSupabaseReady();
+
+    const membership = await this.supabase.query<{ is_admin: boolean }>(
+      'select is_admin from memberships where group_id = $1 and user_id = $2 limit 1',
+      [params.groupId, params.adminUserId],
+    );
+
+    const isAdmin = membership[0]?.is_admin;
+    if (!isAdmin) {
+      throw new UnauthorizedException(
+        'Solo un administrador puede iniciar la tanda.',
+      );
+    }
+
+    await this.supabase.query('update groups set status = $1 where id = $2', [
+      'ACTIVE',
+      params.groupId,
+    ]);
   }
 
   private ensureSupabaseReady(): void {

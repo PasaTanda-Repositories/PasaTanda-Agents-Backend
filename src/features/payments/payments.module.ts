@@ -6,6 +6,7 @@ import { PaymentWorkflowService } from './payment-workflow.service';
 import { InfrastructureModule } from '../../common/intraestructure/infrastructure.module';
 import { SecurityModule } from '../../common/security/security.module';
 import { WhatsappMessagingModule } from '../whatsapp/whatsapp-messaging.module';
+import { PaybeSignerService } from './paybe-signer.service';
 
 @Module({
   imports: [
@@ -15,7 +16,11 @@ import { WhatsappMessagingModule } from '../whatsapp/whatsapp-messaging.module';
     WhatsappMessagingModule,
   ],
   controllers: [TransactionsController],
-  providers: [PaymentIntegrationService, PaymentWorkflowService],
+  providers: [
+    PaymentIntegrationService,
+    PaymentWorkflowService,
+    PaybeSignerService,
+  ],
   exports: [PaymentWorkflowService],
 })
 export class PaymentsModule {}

@@ -54,9 +54,11 @@ export class GameMasterToolsService {
         senderPhone: z.string().optional(),
         participantPhone: z.string().optional(),
         participantName: z.string().optional(),
+        groupId: z.string().optional(),
+        userId: z.string().optional(),
       }),
       execute: async (args) => {
-        await this.groups.addParticipantPlaceholder(args);
+        await this.groups.addParticipant(args);
         return { acknowledged: true };
       },
     });
@@ -91,12 +93,14 @@ export class GameMasterToolsService {
         senderPhone: z.string(),
         inviteCode: z.string().optional(),
         accept: z.boolean().optional(),
+        userId: z.string().optional(),
       }),
       execute: async (args) => {
-        await this.groups.respondInvitationPlaceholder({
+        await this.groups.respondInvitation({
           senderPhone: args.senderPhone,
           inviteCode: args.inviteCode,
           accept: args.accept ?? true,
+          userId: args.userId,
         });
         return { acknowledged: true };
       },
@@ -107,9 +111,15 @@ export class GameMasterToolsService {
     return new FunctionTool({
       name: 'configure_tanda',
       description: 'Configura parámetros de la tanda seleccionada.',
-      parameters: z.object({ senderPhone: z.string() }),
+      parameters: z.object({
+        senderPhone: z.string(),
+        groupId: z.string().optional(),
+      }),
       execute: async (args) => {
-        await this.groups.configureGroupPlaceholder(args.senderPhone);
+        await this.groups.configureGroup({
+          to: args.senderPhone,
+          groupId: args.groupId,
+        });
         return { acknowledged: true };
       },
     });
@@ -119,9 +129,17 @@ export class GameMasterToolsService {
     return new FunctionTool({
       name: 'check_group_status',
       description: 'Consulta el estado de la tanda y responde al usuario.',
-      parameters: z.object({ senderPhone: z.string() }),
+      parameters: z.object({
+        senderPhone: z.string(),
+        groupId: z.string().optional(),
+        userId: z.string().optional(),
+      }),
       execute: async (args) => {
-        await this.groups.checkGroupStatusPlaceholder(args.senderPhone);
+        await this.groups.checkGroupStatus({
+          to: args.senderPhone,
+          groupId: args.groupId,
+          userId: args.userId,
+        });
         return { acknowledged: true };
       },
     });
@@ -131,21 +149,17 @@ export class GameMasterToolsService {
     return new FunctionTool({
       name: 'start_tanda',
       description: 'Inicia la tanda seleccionada y confirma.',
-      parameters: z.object({ senderPhone: z.string() }),
+      parameters: z.object({
+        senderPhone: z.string(),
+        groupId: z.string().optional(),
+        adminUserId: z.string().optional(),
+      }),
       execute: async (args) => {
-        await this.groups.startTandaPlaceholder(args.senderPhone);
-        return { acknowledged: true };
-      },
-    });
-  }
-
-  get getUserInfoTool(): FunctionTool {
-    return new FunctionTool({
-      name: 'get_user_info',
-      description: 'Recupera la información del usuario en la tanda.',
-      parameters: z.object({ senderPhone: z.string() }),
-      execute: async (args) => {
-        await this.groups.getUserInfoPlaceholder(args.senderPhone);
+        await this.groups.startTanda({
+          to: args.senderPhone,
+          groupId: args.groupId,
+          adminUserId: args.adminUserId,
+        });
         return { acknowledged: true };
       },
     });
@@ -161,7 +175,6 @@ export class GameMasterToolsService {
       this.configureGroupTool,
       this.checkGroupStatusTool,
       this.startTandaTool,
-      this.getUserInfoTool,
     ];
   }
 }
