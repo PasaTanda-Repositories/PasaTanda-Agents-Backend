@@ -1,18 +1,15 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { WhatsappController } from './controllers/whatsapp.controller';
 import { WhatsappService } from './services/whatsapp.service';
-import { WhatsAppMessagingService } from './services/whatsapp.messaging.service';
-import { Module } from '@nestjs/common';
-import { VerificationService } from '../login/verification.service';
-import { SupabaseService } from '../../common/intraestructure/supabase/supabase.service';
+import { LoginModule } from '../login/login.module';
+import { AdkModule } from '../../core/adk/adk.module';
+import { WhatsappMessagingModule } from './whatsapp-messaging.module';
 
 @Module({
+  imports: [ConfigModule, AdkModule, LoginModule, WhatsappMessagingModule],
   controllers: [WhatsappController],
-  providers: [
-    WhatsappService,
-    WhatsAppMessagingService,
-    VerificationService,
-    SupabaseService,
-  ],
-  exports: [WhatsappService, WhatsAppMessagingService],
+  providers: [WhatsappService],
+  exports: [WhatsappService],
 })
 export class WhatsappModule {}

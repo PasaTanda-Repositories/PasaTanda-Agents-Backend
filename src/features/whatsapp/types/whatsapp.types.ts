@@ -1,6 +1,9 @@
 import type { WhatsAppIncomingMessage } from '../interfaces/whatsapp.interface';
-
-
+import type {
+  AdkSessionSnapshot,
+  Intent,
+  SanitizedTextResult,
+} from '../../../core/adk/session/types/adk-session.types';
 
 export type PasatandaIntent =
   | 'PAY_QUOTA'
@@ -16,12 +19,6 @@ export enum PaymentState {
   QR_SENT = 'STATE_QR_SENT',
   VERIFYING = 'STATE_VERIFYING',
   COMPLETED = 'STATE_COMPLETED',
-}
-
-export interface SanitizationToken {
-  placeholder: string;
-  rawValue: string;
-  kind: 'phone' | 'email' | 'name' | 'address';
 }
 
 /**

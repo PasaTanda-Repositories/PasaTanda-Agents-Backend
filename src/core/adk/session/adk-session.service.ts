@@ -3,7 +3,7 @@ import type {
   AdkSessionSnapshot,
   Intent,
   SanitizedTextResult,
-} from '../whatsapp.types';
+} from './types/adk-session.types';
 import { SupabaseService } from '../../../common/intraestructure/supabase/supabase.service';
 
 interface AdkSessionRow {

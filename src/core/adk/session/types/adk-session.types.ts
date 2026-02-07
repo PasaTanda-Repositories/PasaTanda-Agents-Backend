@@ -12,6 +12,12 @@ export enum Intent {
   TWO_FA = 'INTENT_2FA_REPLY',
 }
 
+export interface SanitizationToken {
+  placeholder: string;
+  rawValue: string;
+  kind: 'phone' | 'email' | 'name' | 'address';
+}
+
 export interface SanitizedTextResult {
   sanitizedText: string;
   normalizedText: string;
