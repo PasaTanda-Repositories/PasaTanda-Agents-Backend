@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { FunctionTool } from '@google/adk';
 import { z } from 'zod';
-import { GroupWorkflowService } from '../../../../features/groups/services/group-workflow.service';
+import { GroupMessagingService } from '../../../../features/groups/services/group-messaging.service';
 
 @Injectable()
 export class GameMasterToolsService {
-  constructor(private readonly groups: GroupWorkflowService) {}
+  constructor(private readonly groups: GroupMessagingService) {}
 
   get createGroupTool(): FunctionTool {
     return new FunctionTool({
@@ -32,13 +32,15 @@ export class GameMasterToolsService {
         'Envía un listado para que el usuario elija la tanda administrada.',
       parameters: z.object({
         senderPhone: z.string(),
+        userId: z.string().optional(),
         purpose: z.string().optional(),
       }),
       execute: async (args) => {
-        await this.groups.sendAdminSelectionPlaceholder(
-          args.senderPhone,
-          args.purpose,
-        );
+        await this.groups.sendAdminSelectionPrompt({
+          to: args.senderPhone,
+          userId: args.userId,
+          purpose: args.purpose,
+        });
         return { acknowledged: true };
       },
     });
@@ -56,6 +58,27 @@ export class GameMasterToolsService {
       execute: async (args) => {
         await this.groups.addParticipantPlaceholder(args);
         return { acknowledged: true };
+      },
+    });
+  }
+
+  get generateInvitationTool(): FunctionTool {
+    return new FunctionTool({
+      name: 'generate_group_invitation',
+      description: 'Genera y comparte un enlace de invitación para una tanda.',
+      parameters: z.object({
+        senderPhone: z.string(),
+        groupId: z.string(),
+        adminUserId: z.string().optional(),
+      }),
+      execute: async (args) => {
+        const invite = await this.groups.sendInvitationLink({
+          groupId: args.groupId,
+          to: args.senderPhone,
+          adminUserId: args.adminUserId,
+        });
+
+        return { inviteCode: invite.inviteCode, inviteLink: invite.inviteLink };
       },
     });
   }
@@ -132,6 +155,7 @@ export class GameMasterToolsService {
     return [
       this.createGroupTool,
       this.selectAdminGroupTool,
+      this.generateInvitationTool,
       this.addParticipantTool,
       this.respondToInvitationTool,
       this.configureGroupTool,

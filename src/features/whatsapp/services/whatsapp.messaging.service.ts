@@ -15,6 +15,8 @@ import {
   InteractiveOptions,
   PaymentRequestParams,
   UploadMediaOptions,
+  WhatsAppSticker,
+  StickerOptions,
 } from '../interfaces/whatsapp-messaging.interface';
 
 /**
@@ -158,6 +160,36 @@ export class WhatsAppMessagingService {
         ...(document.link ? { link: document.link } : {}),
         ...(options?.caption ? { caption: options.caption } : {}),
         ...(options?.filename ? { filename: options.filename } : {}),
+      },
+    };
+
+    if (options?.replyToMessageId) {
+      payload.context = { message_id: options.replyToMessageId };
+    }
+
+    return this.sendMessage(payload, options?.phoneNumberId);
+  }
+
+  // =========================================================================
+  // STICKERS
+  // =========================================================================
+  async sendSticker(
+    to: string,
+    sticker: WhatsAppSticker,
+    options?: StickerOptions,
+  ): Promise<WhatsAppMessageResponse> {
+    if (!sticker.id && !sticker.link) {
+      throw new Error('Sticker inválido: se requiere id o link');
+    }
+
+    const payload: Record<string, unknown> = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'sticker',
+      sticker: {
+        ...(sticker.id ? { id: sticker.id } : {}),
+        ...(sticker.link ? { link: sticker.link } : {}),
       },
     };
 

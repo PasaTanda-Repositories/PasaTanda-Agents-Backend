@@ -8,9 +8,14 @@ import {
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { TokenService } from '../../common/security/token.service';
-import { GroupCreationService } from './services/group-creation.service';
+import { GroupService } from './services/group.service';
 import { CreateGroupDto, JoinGroupDto } from './dto/group.dto';
 
 @ApiTags('groups')
@@ -19,7 +24,7 @@ import { CreateGroupDto, JoinGroupDto } from './dto/group.dto';
 export class GroupsController {
   constructor(
     private readonly tokens: TokenService,
-    private readonly groups: GroupCreationService,
+    private readonly groups: GroupService,
   ) {}
 
   @Get()
@@ -55,8 +60,24 @@ export class GroupsController {
 
     return {
       groupId: created.id,
-      inviteLink: `https://pasatanda.lat/join/${created.inviteCode}`,
+      inviteLink: this.groups.getInviteLink(created.inviteCode),
     };
+  }
+
+  @Post(':id/invitation')
+  @ApiOperation({
+    summary: 'Genera o renueva el código de invitación de la tanda',
+  })
+  @ApiOkResponse({ description: 'Invitación generada' })
+  async regenerateInvitation(
+    @Headers('authorization') authorization: string,
+    @Param('id') groupId: string,
+  ): Promise<{ inviteCode: string; inviteLink: string; groupName: string }> {
+    const { userId } = this.resolveUser(authorization);
+    return this.groups.regenerateInviteCode({
+      groupId,
+      adminUserId: userId,
+    });
   }
 
   @Post(':id/join')

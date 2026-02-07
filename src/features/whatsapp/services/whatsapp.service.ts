@@ -300,11 +300,15 @@ export class WhatsappService {
         groupId: message.group?.id,
       });
 
+      this.logger.debug(`🪧 [ADK] Mensaje ${result.responseText}`);
       if (this.sendAgentText && result.responseText?.trim()) {
         await this.messagingService.sendText(
           canonicalSender,
           result.responseText,
           { phoneNumberId },
+        );
+        this.logger.log(
+          `🪧 [ADK] Mensaje enviado para ${canonicalSender} - Intent: ${result.intent}`,
         );
       }
 

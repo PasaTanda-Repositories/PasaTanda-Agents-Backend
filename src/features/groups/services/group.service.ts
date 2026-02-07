@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { SupabaseService } from '../../../common/intraestructure/supabase/supabase.service';
 import type {
@@ -7,13 +8,23 @@ import type {
   CreateGroupResult,
   GroupDashboard,
   GroupSummary,
+  InviteInfo,
 } from '../types/group-creation.types';
 
 @Injectable()
-export class GroupCreationService {
-  private readonly logger = new Logger(GroupCreationService.name);
+export class GroupService {
+  private readonly logger = new Logger(GroupService.name);
+  private readonly inviteBaseUrl: string;
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly config: ConfigService,
+  ) {
+    this.inviteBaseUrl = this.config.get<string>(
+      'INVITE_BASE_URL',
+      'https://pasatanda.lat/join',
+    );
+  }
 
   async createGroup(params: CreateGroupParams): Promise<CreateGroupResult> {
     this.ensureSupabaseReady();
@@ -40,6 +51,46 @@ export class GroupCreationService {
     }
 
     return { id: row.id, inviteCode: row.invite_code };
+  }
+
+  async regenerateInviteCode(params: {
+    groupId: string;
+    adminUserId: string;
+  }): Promise<InviteInfo> {
+    this.ensureSupabaseReady();
+
+    const membership = await this.supabase.query<{ is_admin: boolean }>(
+      'select is_admin from memberships where group_id = $1 and user_id = $2 limit 1',
+      [params.groupId, params.adminUserId],
+    );
+
+    const isAdmin = membership[0]?.is_admin;
+    if (!isAdmin) {
+      throw new UnauthorizedException(
+        'Solo un administrador puede generar invitaciones.',
+      );
+    }
+
+    const inviteCode = this.generateInviteCode();
+    const rows = await this.supabase.query<{
+      invite_code: string;
+      name: string;
+    }>(
+      'update groups set invite_code = $1 where id = $2 returning invite_code, name',
+      [inviteCode, params.groupId],
+    );
+
+    const row = rows[0];
+    if (!row) {
+      throw new Error('No se pudo regenerar el código de invitación');
+    }
+
+    const inviteLink = this.buildInviteLink(row.invite_code);
+    return {
+      inviteCode: row.invite_code,
+      inviteLink,
+      groupName: row.name ?? 'tu tanda',
+    };
   }
 
   async addMembership(params: AddMembershipParams): Promise<string> {
@@ -110,6 +161,27 @@ export class GroupCreationService {
     return (currentMax ?? 0) + 1;
   }
 
+  async getGroupMetadata(groupId: string): Promise<InviteInfo | null> {
+    this.ensureSupabaseReady();
+    const rows = await this.supabase.query<{
+      name: string;
+      invite_code: string;
+    }>('select name, invite_code from groups where id = $1 limit 1', [groupId]);
+
+    const row = rows[0];
+    if (!row) return null;
+
+    return {
+      groupName: row.name,
+      inviteCode: row.invite_code,
+      inviteLink: this.buildInviteLink(row.invite_code),
+    };
+  }
+
+  getInviteLink(inviteCode: string): string {
+    return this.buildInviteLink(inviteCode);
+  }
+
   async getDashboard(groupId: string, userId: string): Promise<GroupDashboard> {
     this.ensureSupabaseReady();
 
@@ -153,6 +225,13 @@ export class GroupCreationService {
         'Servicio de grupos deshabilitado por falta de conexión a Supabase',
       );
     }
+  }
+
+  private buildInviteLink(inviteCode: string): string {
+    const base = this.inviteBaseUrl.endsWith('/')
+      ? this.inviteBaseUrl.slice(0, -1)
+      : this.inviteBaseUrl;
+    return `${base}/${inviteCode}`;
   }
 
   private generateInviteCode(): string {

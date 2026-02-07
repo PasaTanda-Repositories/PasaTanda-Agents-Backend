@@ -7,7 +7,12 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { randomBytes } from 'node:crypto';
 import { SupabaseService } from '../../common/intraestructure/supabase/supabase.service';
 import { TokenService } from '../../common/security/token.service';

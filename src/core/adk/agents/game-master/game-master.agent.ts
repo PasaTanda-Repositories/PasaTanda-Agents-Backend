@@ -37,8 +37,9 @@ FUNCIONES PRINCIPALES:
 3. **Responder invitaciones**: Usa respond_to_invitation cuando un usuario quiera aceptar o rechazar una invitación.
 4. **Configurar valores**: Usa configure_tanda para ajustar montos, frecuencia y opciones.
 5. **Consultar estado**: Usa check_group_status para ver información de un grupo.
-6. **Iniciar tanda**: Usa start_tanda para desplegar contrato (admin) y activar.
-7. **Información de usuario**: Usa get_user_info para ver los grupos de un usuario.
+6. **Generar invitaciones**: Usa generate_group_invitation para crear o renovar el link de invitación y compartirlo.
+7. **Iniciar tanda**: Usa start_tanda para desplegar contrato (admin) y activar.
+8. **Información de usuario**: Usa get_user_info para ver los grupos de un usuario.
 
 CONTEXTO IMPORTANTE:
 - Todos los grupos inician en estado DRAFT

@@ -24,47 +24,69 @@
             "method": "GET",
             "header": [
               { "key": "x-oauth-token", "value": "{{oauthToken}}" },
-              { "key": "x-auth-provider", "value": "{{authProvider}}", "disabled": false }
+              {
+                "key": "x-auth-provider",
+                "value": "{{authProvider}}",
+                "disabled": false
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/auth/salt", "host": ["{{baseUrl}}"], "path": ["auth", "salt"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/salt",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "salt"]
+            }
           }
         },
         {
           "name": "Login",
           "request": {
             "method": "POST",
-            "header": [ { "key": "x-auth-provider", "value": "{{authProvider}}" } ],
+            "header": [
+              { "key": "x-auth-provider", "value": "{{authProvider}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"jwt\": \"{{oauthToken}}\",\n  \"suiAddress\": \"0xUserSui\",\n  \"salt\": \"user-salt\",\n  \"alias\": \"Ada\"\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
           }
         },
         {
           "name": "Request OTP",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"{{phone}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/auth/phone/otp", "host": ["{{baseUrl}}"], "path": ["auth", "phone", "otp"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/phone/otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "phone", "otp"]
+            }
           }
         },
         {
           "name": "Phone Status",
           "request": {
             "method": "GET",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/auth/phone/status?phone={{phone}}",
               "host": ["{{baseUrl}}"],
               "path": ["auth", "phone", "status"],
-              "query": [ { "key": "phone", "value": "{{phone}}" } ]
+              "query": [{ "key": "phone", "value": "{{phone}}" }]
             }
           }
         }
@@ -77,28 +99,56 @@
           "name": "List My Groups",
           "request": {
             "method": "GET",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
-            "url": { "raw": "{{baseUrl}}/groups", "host": ["{{baseUrl}}"], "path": ["groups"] }
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups"]
+            }
           }
         },
         {
           "name": "Create Group",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Tanda Oficina\",\n  \"contributionAmount\": 100,\n  \"guaranteeAmount\": 10,\n  \"frequency\": \"WEEKLY\",\n  \"totalRounds\": 5\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/groups", "host": ["{{baseUrl}}"], "path": ["groups"] }
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups"]
+            }
+          }
+        },
+        {
+          "name": "Generate Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/{{groupId}}/invitation",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups", "{{groupId}}", "invitation"]
+            }
           }
         },
         {
           "name": "Join Group",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"turnNumber\": 3\n}",
@@ -115,7 +165,9 @@
           "name": "Group Dashboard",
           "request": {
             "method": "GET",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/groups/{{groupId}}/dashboard",
               "host": ["{{baseUrl}}"],
@@ -132,52 +184,76 @@
           "name": "Sponsor Create",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"txBytes\": \"{{txBytes}}\",\n  \"groupId\": \"{{groupId}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/tx/sponsor/create", "host": ["{{baseUrl}}"], "path": ["tx", "sponsor", "create"] }
+            "url": {
+              "raw": "{{baseUrl}}/tx/sponsor/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["tx", "sponsor", "create"]
+            }
           }
         },
         {
           "name": "Sponsor Deposit",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"txBytes\": \"{{txBytes}}\",\n  \"transactionId\": \"optional-tx-id\"\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/tx/sponsor/deposit", "host": ["{{baseUrl}}"], "path": ["tx", "sponsor", "deposit"] }
+            "url": {
+              "raw": "{{baseUrl}}/tx/sponsor/deposit",
+              "host": ["{{baseUrl}}"],
+              "path": ["tx", "sponsor", "deposit"]
+            }
           }
         },
         {
           "name": "Sponsor Payout",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"txBytes\": \"{{txBytes}}\",\n  \"groupId\": \"{{groupId}}\",\n  \"mode\": \"FIAT\"\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/tx/sponsor/payout", "host": ["{{baseUrl}}"], "path": ["tx", "sponsor", "payout"] }
+            "url": {
+              "raw": "{{baseUrl}}/tx/sponsor/payout",
+              "host": ["{{baseUrl}}"],
+              "path": ["tx", "sponsor", "payout"]
+            }
           }
         },
         {
           "name": "Notify Success",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"digest\": \"{{txDigest}}\",\n  \"groupId\": \"{{groupId}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/tx/notify-success", "host": ["{{baseUrl}}"], "path": ["tx", "notify-success"] }
+            "url": {
+              "raw": "{{baseUrl}}/tx/notify-success",
+              "host": ["{{baseUrl}}"],
+              "path": ["tx", "notify-success"]
+            }
           }
         },
         {
@@ -201,24 +277,48 @@
           "name": "Bank Provider",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/webhooks/bank-provider", "host": ["{{baseUrl}}"], "path": ["webhooks", "bank-provider"] },
-            "body": { "mode": "raw", "raw": "{\n  \"event\": \"deposit\",\n  \"amount\": 100\n}", "options": { "raw": { "language": "json" } } }
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/bank-provider",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "bank-provider"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"deposit\",\n  \"amount\": 100\n}",
+              "options": { "raw": { "language": "json" } }
+            }
           }
         },
         {
           "name": "Circle",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/webhooks/circle", "host": ["{{baseUrl}}"], "path": ["webhooks", "circle"] },
-            "body": { "mode": "raw", "raw": "{\n  \"event\": \"payment\",\n  \"status\": \"confirmed\"\n}", "options": { "raw": { "language": "json" } } }
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/circle",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "circle"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"payment\",\n  \"status\": \"confirmed\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
           }
         },
         {
           "name": "Sui Indexer",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/webhooks/sui-indexer", "host": ["{{baseUrl}}"], "path": ["webhooks", "sui-indexer"] },
-            "body": { "mode": "raw", "raw": "{\n  \"event\": \"tx\",\n  \"digest\": \"{{txDigest}}\"\n}", "options": { "raw": { "language": "json" } } }
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/sui-indexer",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "sui-indexer"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"tx\",\n  \"digest\": \"{{txDigest}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
           }
         }
       ]
@@ -251,7 +351,11 @@
               "raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"PHONE_NUMBER_ID\",\n      \"changes\": [\n        {\n          \"field\": \"messages\",\n          \"value\": {\n            \"metadata\": { \"phone_number_id\": \"PHONE_NUMBER_ID\" },\n            \"messages\": [\n              {\n                \"from\": \"{{phone}}\",\n                \"id\": \"wamid.HBgM...\",\n                \"timestamp\": \"1712345678\",\n                \"text\": { \"body\": \"Hola\" },\n                \"type\": \"text\"\n              }\n            ]\n          }\n        }\n      ]\n    }\n  ]\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "url": { "raw": "{{baseUrl}}/webhooks/whatsapp", "host": ["{{baseUrl}}"], "path": ["webhooks", "whatsapp"] }
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/whatsapp",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "whatsapp"]
+            }
           }
         }
       ]

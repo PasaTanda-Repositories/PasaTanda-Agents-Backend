@@ -114,3 +114,10 @@ export interface PaymentRequestParams {
 export interface UploadMediaOptions {
   phoneNumberId?: string;
 }
+
+export interface WhatsAppSticker {
+  id?: string;
+  link?: string;
+}
+
+export interface StickerOptions extends MessageContextOptions {}

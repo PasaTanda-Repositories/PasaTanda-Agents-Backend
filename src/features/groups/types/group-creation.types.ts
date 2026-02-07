@@ -14,6 +14,12 @@ export interface CreateGroupResult {
   inviteCode: string;
 }
 
+export interface InviteInfo {
+  inviteCode: string;
+  inviteLink: string;
+  groupName: string;
+}
+
 export interface AddMembershipParams {
   groupId: string;
   userId: string;
