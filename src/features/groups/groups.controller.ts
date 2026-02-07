@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Query,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { TokenService } from '../../common/security/token.service';
 import { GroupCreationService } from './services/group-creation.service';
 import { CreateGroupDto, JoinGroupDto } from './dto/group.dto';
@@ -51,7 +60,8 @@ export class GroupsController {
     @Body() body: JoinGroupDto,
   ): Promise<{ membershipId: string; turnIndex: number }> {
     const { userId } = this.resolveUser(authorization);
-    const turnNumber = body.turnNumber ?? (await this.groups.getNextTurnNumber(groupId));
+    const turnNumber =
+      body.turnNumber ?? (await this.groups.getNextTurnNumber(groupId));
     const membershipId = await this.groups.addMembership({
       groupId,
       userId,

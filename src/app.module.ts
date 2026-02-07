@@ -19,24 +19,39 @@ import { VerificationService } from './features/login/verification.service';
 import { FrontendWebhookService } from './features/login/frontend-webhook.service';
 import { PaymentIntegrationService } from './features/payments/payment-integration.service';
 import { PaymentWorkflowService } from './features/payments/payment-workflow.service';
-import { WhatsAppMessagingService } from './features/whatsapp/services/whatsapp.messaging.service';
-import { WhatsappService } from './features/whatsapp/services/whatsapp.service';
+import { AuthController } from './features/auth/auth.controller';
+import { AuthService } from './features/auth/auth.service';
+import { TokenService } from './common/security/token.service';
+import { GroupsController } from './features/groups/groups.controller';
+import { TransactionsController } from './features/payments/transactions.controller';
+import { WhatsappModule } from './features/whatsapp/whatsapp.module';
+import { ExternalWebhooksController } from './features/webhooks/webhooks.controller';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), HttpModule],
-  controllers: [AppController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    HttpModule,
+    WhatsappModule,
+  ],
+  controllers: [
+    AppController,
+    AuthController,
+    GroupsController,
+    TransactionsController,
+    ExternalWebhooksController,
+  ],
   providers: [
     AppService,
     SupabaseService,
     SupabaseSessionService,
+    TokenService,
+    AuthService,
     GroupCreationService,
     GroupWorkflowService,
     VerificationService,
     FrontendWebhookService,
     PaymentIntegrationService,
     PaymentWorkflowService,
-    WhatsAppMessagingService,
-    WhatsappService,
     OrchestratorToolsService,
     AdkOrchestratorService,
     AdkGameMasterAgent,

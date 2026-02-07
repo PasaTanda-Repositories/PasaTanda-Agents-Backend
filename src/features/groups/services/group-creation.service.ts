@@ -49,10 +49,18 @@ export class GroupCreationService {
       `insert into memberships (group_id, user_id, turn_number, is_admin)
        values ($1, $2, $3, $4)
        on conflict (group_id, user_id) do nothing`,
-      [params.groupId, params.userId, params.turnNumber ?? null, params.isAdmin ?? false],
+      [
+        params.groupId,
+        params.userId,
+        params.turnNumber ?? null,
+        params.isAdmin ?? false,
+      ],
     );
 
-    const rows = await this.supabase.query<{ id: string; turn_number: number | null }>(
+    const rows = await this.supabase.query<{
+      id: string;
+      turn_number: number | null;
+    }>(
       'select id, turn_number from memberships where group_id = $1 and user_id = $2 limit 1',
       [params.groupId, params.userId],
     );
@@ -105,10 +113,10 @@ export class GroupCreationService {
   async getDashboard(groupId: string, userId: string): Promise<GroupDashboard> {
     this.ensureSupabaseReady();
 
-    const groupRows = await this.supabase.query<{ object_id: string | null; status: string }>(
-      'select object_id, status from groups where id = $1 limit 1',
-      [groupId],
-    );
+    const groupRows = await this.supabase.query<{
+      object_id: string | null;
+      status: string;
+    }>('select object_id, status from groups where id = $1 limit 1', [groupId]);
 
     const group = groupRows[0] ?? { object_id: null, status: 'DRAFT' };
 
@@ -141,7 +149,9 @@ export class GroupCreationService {
   private ensureSupabaseReady(): void {
     if (!this.supabase.isEnabled()) {
       this.logger.error('SupabaseService no está configurado.');
-      throw new Error('Servicio de grupos deshabilitado por falta de conexión a Supabase');
+      throw new Error(
+        'Servicio de grupos deshabilitado por falta de conexión a Supabase',
+      );
     }
   }
 
@@ -149,4 +159,3 @@ export class GroupCreationService {
     return randomBytes(5).toString('hex');
   }
 }
-

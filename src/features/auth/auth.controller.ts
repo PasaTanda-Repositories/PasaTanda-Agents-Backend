@@ -1,8 +1,20 @@
-import { Body, Controller, Get, Headers, Post, Query, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Post,
+  Query,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TokenService } from '../../common/security/token.service';
 import { VerificationService } from '../login/verification.service';
-import { LoginRequestDto, PhoneOtpRequestDto, PhoneStatusQueryDto } from './dto/auth.dto';
+import {
+  LoginRequestDto,
+  PhoneOtpRequestDto,
+  PhoneStatusQueryDto,
+} from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,7 +36,15 @@ export class AuthController {
   async login(
     @Body() body: LoginRequestDto,
     @Headers('x-auth-provider') provider?: string,
-  ): Promise<{ accessToken: string; user: { id: string; suiAddress: string; phoneVerified: boolean; status: string } }> {
+  ): Promise<{
+    accessToken: string;
+    user: {
+      id: string;
+      suiAddress: string;
+      phoneVerified: boolean;
+      status: string;
+    };
+  }> {
     return this.auth.login(body, provider);
   }
 

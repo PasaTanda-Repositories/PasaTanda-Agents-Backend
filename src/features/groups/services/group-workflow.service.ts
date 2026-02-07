@@ -14,14 +14,19 @@ export class GroupWorkflowService {
     frequencyDays?: number;
     yieldEnabled?: boolean;
   }): Promise<void> {
-    this.logger.debug(`Solicitud de creación de grupo desde ${params.senderPhone}`);
+    this.logger.debug(
+      `Solicitud de creación de grupo desde ${params.senderPhone}`,
+    );
     await this.messaging.sendText(
       params.senderPhone,
       `Estamos preparando tu nueva tanda${params.groupName ? ` "${params.groupName}"` : ''}. Te avisaremos cuando esté lista para invitar participantes.`,
     );
   }
 
-  async sendAdminSelectionPlaceholder(to: string, purpose?: string): Promise<void> {
+  async sendAdminSelectionPlaceholder(
+    to: string,
+    purpose?: string,
+  ): Promise<void> {
     await this.messaging.sendText(
       to,
       `Necesito que selecciones una tanda para continuar${purpose ? ` (${purpose})` : ''}. Por ahora esta selección se completará de forma manual.`,

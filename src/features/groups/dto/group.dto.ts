@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import type { FrequencyType } from '../types/group-creation.types';
 
 const frequencyValues: FrequencyType[] = ['WEEKLY', 'MONTHLY', 'BIWEEKLY'];

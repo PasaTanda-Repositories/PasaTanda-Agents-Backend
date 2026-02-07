@@ -87,7 +87,10 @@ export class PaymentIntegrationService {
     url.searchParams.set('orderId', params.orderId);
     url.searchParams.set('amountUsd', String(params.amountUsd));
 
-    const payload = this.buildStrictFiatPayload(params.orderId, params.proofMetadata);
+    const payload = this.buildStrictFiatPayload(
+      params.orderId,
+      params.proofMetadata,
+    );
     if (!payload) {
       return {
         success: false,
@@ -179,9 +182,10 @@ export class PaymentIntegrationService {
   private buildStrictFiatPayload(
     orderId: string,
     proofMetadata: Record<string, unknown>,
-  ):
-    | { currency: string; payload: { glosa: string; time: string; transactionId: string } }
-    | null {
+  ): {
+    currency: string;
+    payload: { glosa: string; time: string; transactionId: string };
+  } | null {
     const currency =
       typeof (proofMetadata as any)?.currency === 'string'
         ? String((proofMetadata as any).currency)

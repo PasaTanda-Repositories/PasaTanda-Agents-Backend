@@ -9,6 +9,7 @@ import {
 import { MessageContextOptions as MessagingContext } from '../interfaces/whatsapp-messaging.interface';
 import { AdkOrchestratorService } from '../../../core/adk/orchestrator/adk-orchestrator.service';
 import { WhatsAppMessagingService } from './whatsapp.messaging.service';
+import { VerificationService } from '../../login/verification.service';
 
 @Injectable()
 export class WhatsappService {
@@ -23,6 +24,7 @@ export class WhatsappService {
     private readonly configService: ConfigService,
     private readonly adkOrchestrator: AdkOrchestratorService,
     private readonly messagingService: WhatsAppMessagingService,
+    private readonly verification: VerificationService,
   ) {
     this.defaultPhoneNumberId =
       this.configService.get<string>('WHATSAPP_PHONE_NUMBER_ID', '') ||
@@ -252,7 +254,21 @@ export class WhatsappService {
     const canonicalSender = contactWaId ?? message.from;
     this.logger.log(`📨 Procesando mensaje de ${canonicalSender}`);
 
-    // La verificación de códigos OTP ahora se maneja vía el orquestador ADK usando una tool dedicada.
+    const verifiedViaOtp = await this.verification.verifyFromMessage(
+      canonicalSender,
+      message.text.body,
+    );
+
+    if (verifiedViaOtp) {
+      await this.verification.markPhoneVerified(canonicalSender);
+      await this.messagingService.sendText(
+        canonicalSender,
+        '✅ Número verificado. Ya puedes continuar en la app.',
+        { phoneNumberId },
+      );
+      return;
+    }
+
     await this.handleWithAdkOrchestrator(
       canonicalSender,
       message,

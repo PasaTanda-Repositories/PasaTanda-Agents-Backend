@@ -16,11 +16,16 @@ export class TokenService {
 
   constructor(private readonly configService: ConfigService) {
     this.secret =
-      this.configService.get<string>('APP_JWT_SECRET') || randomBytes(32).toString('hex');
-    this.ttlMs = Number(this.configService.get<string>('APP_JWT_TTL_MS', '86400000'));
+      this.configService.get<string>('APP_JWT_SECRET') ||
+      randomBytes(32).toString('hex');
+    this.ttlMs = Number(
+      this.configService.get<string>('APP_JWT_TTL_MS', '86400000'),
+    );
   }
 
-  issueToken(payload: Omit<AccessTokenPayload, 'issuedAt' | 'expiresAt'>): string {
+  issueToken(
+    payload: Omit<AccessTokenPayload, 'issuedAt' | 'expiresAt'>,
+  ): string {
     const issuedAt = Date.now();
     const expiresAt = issuedAt + this.ttlMs;
     const finalPayload: AccessTokenPayload = {
@@ -29,7 +34,10 @@ export class TokenService {
       expiresAt,
     };
 
-    const encodedPayload = Buffer.from(JSON.stringify(finalPayload), 'utf8').toString('base64url');
+    const encodedPayload = Buffer.from(
+      JSON.stringify(finalPayload),
+      'utf8',
+    ).toString('base64url');
     const signature = this.sign(encodedPayload);
     return `${encodedPayload}.${signature}`;
   }
@@ -54,19 +62,28 @@ export class TokenService {
   }
 
   private sign(encodedPayload: string): string {
-    return createHmac('sha256', this.secret).update(encodedPayload).digest('base64url');
+    return createHmac('sha256', this.secret)
+      .update(encodedPayload)
+      .digest('base64url');
   }
 
   private parsePayload(encodedPayload: string): AccessTokenPayload {
     try {
       const raw = Buffer.from(encodedPayload, 'base64url').toString('utf8');
       const parsed = JSON.parse(raw) as AccessTokenPayload;
-      if (!parsed.userId || !parsed.suiAddress || !parsed.issuedAt || !parsed.expiresAt) {
+      if (
+        !parsed.userId ||
+        !parsed.suiAddress ||
+        !parsed.issuedAt ||
+        !parsed.expiresAt
+      ) {
         throw new Error('payload incompleto');
       }
       return parsed;
     } catch (error) {
-      throw new UnauthorizedException(`Token inválido: ${(error as Error).message}`);
+      throw new UnauthorizedException(
+        `Token inválido: ${(error as Error).message}`,
+      );
     }
   }
 }

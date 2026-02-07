@@ -21,7 +21,7 @@ import type { WhatsAppMessage } from '../interfaces/whatsapp.interface';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-call
 @ApiTags('WhatsApp Webhook')
-@Controller('webhook')
+@Controller('webhooks/whatsapp')
 export class WhatsappController {
   private readonly logger = new Logger(WhatsappController.name);
 

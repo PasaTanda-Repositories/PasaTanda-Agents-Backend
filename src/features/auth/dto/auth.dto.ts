@@ -17,7 +17,10 @@ export class LoginRequestDto {
   @IsNotEmpty()
   salt!: string;
 
-  @ApiProperty({ required: false, description: 'Alias opcional para mostrar en grupo' })
+  @ApiProperty({
+    required: false,
+    description: 'Alias opcional para mostrar en grupo',
+  })
   @IsOptional()
   @IsString()
   alias?: string;

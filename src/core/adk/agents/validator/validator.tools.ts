@@ -26,4 +26,3 @@ export class ValidatorToolsService {
     return [this.verifyPaymentProofTool];
   }
 }
-
