@@ -55,7 +55,7 @@ export class VerificationService {
     }
 
     await this.supabase.query(
-      'update verification_codes set verified = true, expires_at = timezone(''utc'', now()) where id = $1',
+      "update verification_codes set verified = true, expires_at = timezone('utc', now()) where id = $1",
       [row.id],
     );
 
@@ -74,7 +74,9 @@ export class VerificationService {
     return { verified: row.verified, linkedAt: row.created_at ? this.parseTimestamp(row.created_at) : null };
   }
 
-  async getLatestRecord(phone: string): Promise<VerificationRecord | undefined> {
+  async getLatestRecord(
+    phone: string,
+  ): Promise<VerificationRecord | undefined> {
     this.ensureSupabaseReady();
     const normalizedPhone = this.normalizePhone(phone);
     const row = await this.getRowByPhone(normalizedPhone);

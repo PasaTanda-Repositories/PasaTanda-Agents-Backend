@@ -21,10 +21,9 @@ export class OrchestratorToolsService {
           .describe('Nombre de WhatsApp si está disponible'),
       }),
       execute: async (args) => {
-        const verified = await this.verification.confirmCode(
+        const verified = await this.verification.verifyCode(
           args.senderPhone,
           args.code,
-          args.whatsappUsername,
         );
         return { verified };
       },

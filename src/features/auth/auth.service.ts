@@ -58,11 +58,14 @@ export class AuthService {
       }
 
       await this.supabase.query(
-        'update users set last_login_at = timezone(''utc'', now()), alias = coalesce($1, alias), sui_address = $2 where id = $3',
+        `update users set last_login_at = timezone('utc', now()), alias = coalesce($1, alias), sui_address = $2 where id = $3`,
         [body.alias ?? null, body.suiAddress, existing.id],
       );
 
-      const accessToken = this.tokens.issueToken({ userId: existing.id, suiAddress: existing.sui_address });
+      const accessToken = this.tokens.issueToken({
+        userId: existing.id,
+        suiAddress: existing.sui_address,
+      });
       return {
         accessToken,
         user: {
