@@ -7,7 +7,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('v1');
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://pasatanda.bamp.lat',
+      'http://192.168.0.16:3001',
+      'http://192.168.0.16:3000',
+    ],
   });
   app.useGlobalPipes(
     new ValidationPipe({
@@ -23,8 +29,9 @@ async function bootstrap() {
       'API para autenticacion, gestion de tandas, pagos y webhooks. Usa Bearer token para rutas protegidas.',
     )
     .setVersion('1.0')
+    .addServer('http://localhost:3001', 'local')
     .addServer('http://localhost:3000', 'Local')
-    .addServer('https://api.pasatanda.lat', 'Prod')
+    .addServer('https://api.pasatanda.bamp.lat', 'Prod')
     .addBearerAuth({
       type: 'http',
       scheme: 'bearer',
