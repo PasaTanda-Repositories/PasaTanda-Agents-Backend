@@ -8,6 +8,7 @@ import {
   Query,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -89,6 +90,10 @@ export class GroupsController {
   async getGroupByInvite(
     @Param('inviteCode') inviteCode: string,
   ): Promise<GroupInviteLookup> {
+    if (!inviteCode) {
+      throw new BadRequestException('inviteCode es requerido');
+    }
+
     const group = await this.groups.getGroupByInviteCode(inviteCode);
     if (!group) {
       throw new NotFoundException('GROUP_NOT_FOUND');
@@ -103,6 +108,10 @@ export class GroupsController {
     @Body() body: JoinGroupByInviteDto,
   ): Promise<{ membershipId: string; turnIndex: number; groupId: string }> {
     const { userId } = this.resolveUser(authorization);
+    if (!body || !body.inviteCode) {
+      throw new BadRequestException('inviteCode es requerido en el body');
+    }
+
     const result = await this.groups.joinGroupByInviteCode({
       inviteCode: body.inviteCode,
       userId,
@@ -124,8 +133,27 @@ export class GroupsController {
     @Query('userId') overrideUserId?: string,
   ) {
     const { userId } = this.resolveUser(authorization);
+    if (!groupId) {
+      throw new BadRequestException('groupId es requerido');
+    }
+
     const requester = overrideUserId ?? userId;
     return this.groups.getDashboard(groupId, requester);
+  }
+
+  @Get('dashboard/:id')
+  @ApiOperation({ summary: 'Dashboard de la tanda para administradores' })
+  async adminDashboard(
+    @Headers('authorization') authorization: string,
+    @Param('id') groupId: string,
+  ) {
+    const { userId } = this.resolveUser(authorization);
+    if (!groupId) {
+      throw new BadRequestException('groupId es requerido');
+    }
+
+    await this.groups.ensureAdminMember(groupId, userId);
+    return this.groups.getDashboard(groupId, userId);
   }
 
   
@@ -136,6 +164,9 @@ export class GroupsController {
     }
     const token = authorization.slice('Bearer '.length).trim();
     const payload = this.tokens.verifyToken(token);
+    if (!payload || !payload.userId) {
+      throw new UnauthorizedException('Token inválido o sin userId');
+    }
     return { userId: payload.userId };
   }
 }

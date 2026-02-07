@@ -46,8 +46,44 @@ export interface GroupSummary {
   myTurn: number | null;
 }
 
+export interface GroupDetails {
+  id: string;
+  name: string | null;
+  status: string;
+  objectId: string | null;
+  contributionAmount: number | null;
+  guaranteeAmount: number | null;
+  frequency: FrequencyType | null;
+  totalRounds: number | null;
+  inviteCode: string | null;
+  createdBy: string | null;
+}
+
+export interface GroupParticipant {
+  membershipId: string;
+  userId: string;
+  alias: string | null;
+  isAdmin: boolean;
+  turnNumber: number | null;
+  joinedAt: string | null;
+}
+
+export interface GroupTransaction {
+  id: string;
+  userId: string;
+  type: string;
+  method: string;
+  status: string;
+  amount: number | null;
+  currency: 'USDC';
+  externalPaymentUrl: string | null;
+  qrImageLink: string | null;
+  createdAt: string | null;
+}
+
 export interface GroupDashboard {
-  group: { objectId: string | null; status: string };
-  participants: Array<{ alias: string | null; status: string }>;
+  group: GroupDetails;
+  participants: GroupParticipant[];
+  transactions: GroupTransaction[];
   myStatus: string;
 }

@@ -191,6 +191,20 @@
             }
           }
         }
+        {
+          "name": "Admin Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/dashboard/{{groupId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups", "dashboard", "{{groupId}}"]
+            }
+          }
+        },
       ]
     },
     {
