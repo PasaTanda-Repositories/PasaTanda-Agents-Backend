@@ -15,7 +15,13 @@ import { ValidatorToolsService } from './agents/validator/validator.tools';
 import { SupabaseSessionService } from './session/supabase-session.service';
 
 @Module({
-  imports: [ConfigModule, InfrastructureModule, LoginModule, GroupsModule, PaymentsModule],
+  imports: [
+    ConfigModule,
+    InfrastructureModule,
+    LoginModule,
+    GroupsModule,
+    PaymentsModule,
+  ],
   providers: [
     AdkOrchestratorService,
     OrchestratorToolsService,

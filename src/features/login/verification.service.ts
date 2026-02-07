@@ -20,9 +20,10 @@ export class VerificationService {
     const code = this.generateCode();
     const expiresAt = new Date(Date.now() + this.ttlMs);
 
-    await this.supabase.query('delete from verification_codes where phone = $1', [
-      normalizedPhone,
-    ]);
+    await this.supabase.query(
+      'delete from verification_codes where phone = $1',
+      [normalizedPhone],
+    );
 
     await this.supabase.query(
       `
@@ -71,7 +72,10 @@ export class VerificationService {
       return { verified: false, linkedAt: null };
     }
 
-    return { verified: row.verified, linkedAt: row.created_at ? this.parseTimestamp(row.created_at) : null };
+    return {
+      verified: row.verified,
+      linkedAt: row.created_at ? this.parseTimestamp(row.created_at) : null,
+    };
   }
 
   async getLatestRecord(
@@ -86,7 +90,9 @@ export class VerificationService {
           code: row.code,
           expiresAt: this.parseTimestamp(row.expires_at),
           verified: row.verified,
-          verifiedAt: row.created_at ? this.parseTimestamp(row.created_at) : null,
+          verifiedAt: row.created_at
+            ? this.parseTimestamp(row.created_at)
+            : null,
         }
       : undefined;
   }
@@ -165,4 +171,3 @@ export class VerificationService {
     return matches.map((m) => m.trim()).filter(Boolean);
   }
 }
-

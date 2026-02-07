@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SupabaseService } from '../../common/intraestructure/supabase/supabase.service';
 import { TokenService } from '../../common/security/token.service';
 import { VerificationService } from '../login/verification.service';
@@ -22,7 +26,10 @@ export class AuthService {
     private readonly verification: VerificationService,
   ) {}
 
-  async getSalt(params: { jwt: string; provider?: string }): Promise<{ exists: boolean; salt: string | null }> {
+  async getSalt(params: {
+    jwt: string;
+    provider?: string;
+  }): Promise<{ exists: boolean; salt: string | null }> {
     const claims = this.decodeJwt(params.jwt);
     const provider = this.resolveProvider(params.provider, claims.iss);
     const aud = this.normalizeAud(claims.aud);
@@ -40,7 +47,18 @@ export class AuthService {
     return { exists: true, salt: existing.user_salt };
   }
 
-  async login(body: LoginRequestDto, providerHeader?: string): Promise<{ accessToken: string; user: { id: string; suiAddress: string; phoneVerified: boolean; status: string } }> {
+  async login(
+    body: LoginRequestDto,
+    providerHeader?: string,
+  ): Promise<{
+    accessToken: string;
+    user: {
+      id: string;
+      suiAddress: string;
+      phoneVerified: boolean;
+      status: string;
+    };
+  }> {
     const claims = this.decodeJwt(body.jwt);
     const provider = this.resolveProvider(providerHeader, claims.iss);
     const aud = this.normalizeAud(claims.aud);
@@ -54,7 +72,9 @@ export class AuthService {
 
     if (existing) {
       if (existing.user_salt !== body.salt) {
-        throw new BadRequestException('Salt no coincide con el usuario existente');
+        throw new BadRequestException(
+          'Salt no coincide con el usuario existente',
+        );
       }
 
       await this.supabase.query(
@@ -87,7 +107,10 @@ export class AuthService {
       alias: body.alias ?? claims.name ?? undefined,
     });
 
-    const accessToken = this.tokens.issueToken({ userId: created.id, suiAddress: created.sui_address });
+    const accessToken = this.tokens.issueToken({
+      userId: created.id,
+      suiAddress: created.sui_address,
+    });
     return {
       accessToken,
       user: {
@@ -120,15 +143,12 @@ export class AuthService {
     provider: AuthProvider;
     sub: string;
     aud: string;
-  }): Promise<
-    | {
-        id: string;
-        user_salt: string;
-        sui_address: string;
-        is_phone_verified: boolean;
-      }
-    | null
-  > {
+  }): Promise<{
+    id: string;
+    user_salt: string;
+    sui_address: string;
+    is_phone_verified: boolean;
+  } | null> {
     const rows = await this.supabase.query<{
       id: string;
       user_salt: string;
@@ -186,16 +206,27 @@ export class AuthService {
       throw new BadRequestException('JWT inválido');
     }
     try {
-      const payload = JSON.parse(Buffer.from(segments[1], 'base64').toString('utf8')) as JwtClaims;
+      const payload = JSON.parse(
+        Buffer.from(segments[1], 'base64').toString('utf8'),
+      ) as JwtClaims;
       return payload;
     } catch (error) {
-      throw new BadRequestException(`No se pudo decodificar el JWT: ${(error as Error).message}`);
+      throw new BadRequestException(
+        `No se pudo decodificar el JWT: ${(error as Error).message}`,
+      );
     }
   }
 
-  private resolveProvider(headerProvider?: string, issuer?: string): AuthProvider {
+  private resolveProvider(
+    headerProvider?: string,
+    issuer?: string,
+  ): AuthProvider {
     const normalized = headerProvider?.toUpperCase();
-    if (normalized === 'GOOGLE' || normalized === 'FACEBOOK' || normalized === 'APPLE') {
+    if (
+      normalized === 'GOOGLE' ||
+      normalized === 'FACEBOOK' ||
+      normalized === 'APPLE'
+    ) {
       return normalized;
     }
 

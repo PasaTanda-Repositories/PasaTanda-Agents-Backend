@@ -8,7 +8,12 @@ import { SecurityModule } from '../../common/security/security.module';
 import { WhatsappMessagingModule } from '../whatsapp/whatsapp-messaging.module';
 
 @Module({
-  imports: [HttpModule, InfrastructureModule, SecurityModule, WhatsappMessagingModule],
+  imports: [
+    HttpModule,
+    InfrastructureModule,
+    SecurityModule,
+    WhatsappMessagingModule,
+  ],
   controllers: [TransactionsController],
   providers: [PaymentIntegrationService, PaymentWorkflowService],
   exports: [PaymentWorkflowService],
