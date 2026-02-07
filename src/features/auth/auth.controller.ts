@@ -7,6 +7,13 @@ import {
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { TokenService } from '../../common/security/token.service';
 import { VerificationService } from '../login/verification.service';
@@ -16,6 +23,7 @@ import {
   PhoneStatusQueryDto,
 } from './dto/auth.dto';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -25,6 +33,9 @@ export class AuthController {
   ) {}
 
   @Get('salt')
+  @ApiOperation({ summary: 'Obtiene salt de un usuario existente' })
+  @ApiHeader({ name: 'x-oauth-token', required: true })
+  @ApiHeader({ name: 'x-auth-provider', required: false })
   async getSalt(
     @Headers('x-oauth-token') jwt: string,
     @Headers('x-auth-provider') provider?: string,
@@ -33,6 +44,9 @@ export class AuthController {
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Inicia sesion y devuelve access token' })
+  @ApiHeader({ name: 'x-auth-provider', required: false })
+  @ApiOkResponse({ description: 'Sesion iniciada' })
   async login(
     @Body() body: LoginRequestDto,
     @Headers('x-auth-provider') provider?: string,
@@ -49,6 +63,8 @@ export class AuthController {
   }
 
   @Post('phone/otp')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Solicita OTP para vincular telefono' })
   async requestOtp(
     @Headers('authorization') authorization: string,
     @Body() body: PhoneOtpRequestDto,
@@ -66,6 +82,8 @@ export class AuthController {
   }
 
   @Get('phone/status')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Consulta estado de verificacion de telefono' })
   async status(
     @Headers('authorization') authorization: string,
     @Query() query: PhoneStatusQueryDto,

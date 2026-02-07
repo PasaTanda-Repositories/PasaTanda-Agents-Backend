@@ -6,7 +6,6 @@ import {
   WhatsAppStatus,
   WhatsAppContact,
 } from '../interfaces/whatsapp.interface';
-import { MessageContextOptions as MessagingContext } from '../interfaces/whatsapp-messaging.interface';
 import { AdkOrchestratorService } from '../../../core/adk/orchestrator/adk-orchestrator.service';
 import { WhatsAppMessagingService } from './whatsapp.messaging.service';
 import { VerificationService } from '../../login/verification.service';

@@ -8,10 +8,13 @@ import {
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TokenService } from '../../common/security/token.service';
 import { GroupCreationService } from './services/group-creation.service';
 import { CreateGroupDto, JoinGroupDto } from './dto/group.dto';
 
+@ApiTags('groups')
+@ApiBearerAuth()
 @Controller('groups')
 export class GroupsController {
   constructor(
@@ -20,12 +23,15 @@ export class GroupsController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'Lista las tandas del usuario autenticado' })
   async list(@Headers('authorization') authorization: string) {
     const { userId } = this.resolveUser(authorization);
     return this.groups.listGroupsForUser(userId);
   }
 
   @Post()
+  @ApiOperation({ summary: 'Crea una nueva tanda en estado DRAFT' })
+  @ApiOkResponse({ description: 'Grupo creado y link de invitacion generado' })
   async create(
     @Headers('authorization') authorization: string,
     @Body() body: CreateGroupDto,
@@ -54,6 +60,7 @@ export class GroupsController {
   }
 
   @Post(':id/join')
+  @ApiOperation({ summary: 'Unirse a una tanda existente' })
   async join(
     @Headers('authorization') authorization: string,
     @Param('id') groupId: string,
@@ -73,6 +80,7 @@ export class GroupsController {
   }
 
   @Get(':id/dashboard')
+  @ApiOperation({ summary: 'Dashboard resumido de la tanda' })
   async dashboard(
     @Headers('authorization') authorization: string,
     @Param('id') groupId: string,

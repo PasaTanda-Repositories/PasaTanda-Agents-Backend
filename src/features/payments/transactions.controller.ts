@@ -7,6 +7,7 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { randomBytes } from 'node:crypto';
 import { SupabaseService } from '../../common/intraestructure/supabase/supabase.service';
 import { TokenService } from '../../common/security/token.service';
@@ -17,6 +18,8 @@ import {
   SponsorPayoutDto,
 } from './dto/tx.dto';
 
+@ApiTags('transactions')
+@ApiBearerAuth()
 @Controller('tx')
 export class TransactionsController {
   constructor(
@@ -25,6 +28,7 @@ export class TransactionsController {
   ) {}
 
   @Post('sponsor/create')
+  @ApiOperation({ summary: 'Crea transaccion sponsor de garantia' })
   async sponsorCreate(
     @Headers('authorization') authorization: string,
     @Body() body: SponsorCreateDto,
@@ -45,6 +49,7 @@ export class TransactionsController {
   }
 
   @Post('sponsor/deposit')
+  @ApiOperation({ summary: 'Crea transaccion sponsor de aporte' })
   async sponsorDeposit(
     @Headers('authorization') authorization: string,
     @Body() body: SponsorDepositDto,
@@ -65,6 +70,7 @@ export class TransactionsController {
   }
 
   @Post('sponsor/payout')
+  @ApiOperation({ summary: 'Crea transaccion sponsor para payout' })
   async sponsorPayout(
     @Headers('authorization') authorization: string,
     @Body() body: SponsorPayoutDto,
@@ -85,6 +91,8 @@ export class TransactionsController {
   }
 
   @Post('notify-success')
+  @ApiOperation({ summary: 'Marca transaccion confirmada con digest' })
+  @ApiOkResponse({ description: 'Registro actualizado o creado' })
   async notifySuccess(
     @Headers('authorization') authorization: string,
     @Body() body: NotifySuccessDto,
@@ -109,6 +117,7 @@ export class TransactionsController {
   }
 
   @Get('payment-link/:id')
+  @ApiOperation({ summary: 'Obtiene estado de link de pago' })
   async getPaymentLink(@Param('id') id: string): Promise<{
     id: string;
     status: string;
