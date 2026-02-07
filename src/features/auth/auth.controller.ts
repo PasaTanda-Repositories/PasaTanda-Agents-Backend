@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -15,13 +16,16 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { EnokiService } from './enoki.service';
 import { TokenService } from '../../common/security/token.service';
 import { VerificationService } from '../login/verification.service';
+import { ZkProofRequestDto } from './dto/enoki.dto';
 import {
   LoginRequestDto,
   PhoneOtpRequestDto,
   PhoneStatusQueryDto,
 } from './dto/auth.dto';
+import type { EnokiZkProofPayload } from './types/enoki.types';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -30,6 +34,7 @@ export class AuthController {
     private readonly auth: AuthService,
     private readonly tokens: TokenService,
     private readonly verification: VerificationService,
+    private readonly enoki: EnokiService,
   ) {}
 
   @Get('salt')
@@ -60,6 +65,21 @@ export class AuthController {
     };
   }> {
     return this.auth.login(body, provider);
+  }
+
+  @Post('zkp')
+  @ApiOperation({ summary: 'Solicita una prueba zk a Enoki' })
+  @ApiHeader({ name: 'zklogin-jwt', required: true })
+  @ApiOkResponse({ description: 'Respuesta de Enoki con la prueba zk' })
+  async requestZkProof(
+    @Headers('zklogin-jwt') zkLoginJwt: string,
+    @Body() body: ZkProofRequestDto,
+  ): Promise<EnokiZkProofPayload> {
+    if (!zkLoginJwt) {
+      throw new BadRequestException('Header zklogin-jwt es obligatorio');
+    }
+
+    return this.enoki.requestProof(zkLoginJwt, body);
   }
 
   @Post('phone/otp')
