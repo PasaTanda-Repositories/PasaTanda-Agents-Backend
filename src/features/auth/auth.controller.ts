@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -16,16 +15,19 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { EnokiService } from './enoki.service';
+import { ProvingService } from './proving.service';
 import { TokenService } from '../../common/security/token.service';
 import { VerificationService } from '../login/verification.service';
-import { ZkProofRequestDto } from './dto/enoki.dto';
+import { ZkProofRequestDto } from './dto/proving.dto';
 import {
   LoginRequestDto,
   PhoneOtpRequestDto,
   PhoneStatusQueryDto,
 } from './dto/auth.dto';
-import type { EnokiZkProofPayload } from './types/enoki.types';
+import type {
+  ProvingPingResponse,
+  ProvingProofResponse,
+} from './types/proving.types';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -34,7 +36,7 @@ export class AuthController {
     private readonly auth: AuthService,
     private readonly tokens: TokenService,
     private readonly verification: VerificationService,
-    private readonly enoki: EnokiService,
+    private readonly proving: ProvingService,
   ) {}
 
   @Get('salt')
@@ -68,18 +70,21 @@ export class AuthController {
   }
 
   @Post('zkp')
-  @ApiOperation({ summary: 'Solicita una prueba zk a Enoki' })
-  @ApiHeader({ name: 'zklogin-jwt', required: true })
-  @ApiOkResponse({ description: 'Respuesta de Enoki con la prueba zk' })
+  @ApiOperation({ summary: 'Solicita una prueba zk al Proving Service' })
+  @ApiOkResponse({
+    description: 'Respuesta del Proving Service con la prueba zk',
+  })
   async requestZkProof(
-    @Headers('zklogin-jwt') zkLoginJwt: string,
     @Body() body: ZkProofRequestDto,
-  ): Promise<EnokiZkProofPayload> {
-    if (!zkLoginJwt) {
-      throw new BadRequestException('Header zklogin-jwt es obligatorio');
-    }
+  ): Promise<ProvingProofResponse> {
+    return this.proving.requestProof(body);
+  }
 
-    return this.enoki.requestProof(zkLoginJwt, body);
+  @Get('zkp/ping')
+  @ApiOperation({ summary: 'Ping al Proving Service' })
+  @ApiOkResponse({ description: 'Estado del Proving Service' })
+  async pingProver(): Promise<ProvingPingResponse> {
+    return this.proving.ping();
   }
 
   @Post('phone/otp')

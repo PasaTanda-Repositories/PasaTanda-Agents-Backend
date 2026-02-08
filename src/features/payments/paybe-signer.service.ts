@@ -25,7 +25,7 @@ export class PaybeSignerService {
   }
 
   async sponsorGas(transactionBytes: string): Promise<PaybeSignatureData> {
-    const url = new URL('/v1/v1/signer/sponsor-gas', this.baseUrl);
+    const url = new URL('/v1/signer/sponsor-gas', this.baseUrl);
 
     const response = await firstValueFrom(
       this.http.post<PaybeStandardResponse<PaybeSignatureData>>(

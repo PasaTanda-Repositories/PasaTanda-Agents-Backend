@@ -307,8 +307,10 @@ export class GroupService {
       is_admin: boolean | null;
       turn_number: number | null;
       joined_at: string | null;
+      sui_address: string | null;
     }>(
-      `select m.id as membership_id, m.user_id, m.is_admin, m.turn_number, u.created_at as joined_at, u.alias
+      `select m.id as membership_id, m.user_id, m.is_admin, m.turn_number,
+              u.created_at as joined_at, u.alias, u.sui_address
        from memberships m
        left join users u on u.id = m.user_id
        where m.group_id = $1
@@ -323,7 +325,12 @@ export class GroupService {
       isAdmin: Boolean(row.is_admin),
       turnNumber: row.turn_number,
       joinedAt: row.joined_at ?? null,
+      suiAddress: row.sui_address ?? null,
     }));
+
+    const memberAddresses = participantRows.map(
+      (row) => row.sui_address ?? null,
+    );
 
     const transactionRows = await this.supabase.query<{
       id: string;
@@ -363,6 +370,7 @@ export class GroupService {
       participants,
       transactions,
       myStatus: isMember ? 'PENDING_PAYMENT' : 'NOT_MEMBER',
+      memberAddresses,
     };
   }
 

@@ -66,6 +66,7 @@ export interface GroupParticipant {
   isAdmin: boolean;
   turnNumber: number | null;
   joinedAt: string | null;
+  suiAddress: string | null;
 }
 
 export interface GroupTransaction {
@@ -86,4 +87,5 @@ export interface GroupDashboard {
   participants: GroupParticipant[];
   transactions: GroupTransaction[];
   myStatus: string;
+  memberAddresses: Array<string | null>;
 }
